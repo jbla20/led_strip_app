@@ -33,17 +33,28 @@ void App::run()
 
 std::wstring App::fetchSettingsPath()
 {
-    PWSTR path;
-    HRESULT result = SHGetKnownFolderPath(FOLDERID_Documents, KF_FLAG_DEFAULT, NULL, &path);
+    // Get the path of the executable
+    wchar_t exePath[MAX_PATH];
+    DWORD len = GetModuleFileName(NULL, exePath, MAX_PATH);
 
-    if (result != S_OK)
+    if (len == 0)
     {
         return std::wstring();
     }
 
-    std::wstring strpath = std::wstring(path) + L"\\LedStripApp";
-    CoTaskMemFree(path);
-    return strpath;
+    // Null-terminate the string and extract the directory
+    exePath[len] = L'\0';
+    std::wstring exeDir = exePath;
+    size_t pos = exeDir.find_last_of(L"\\/");
+    if (pos != std::wstring::npos)
+    {
+        exeDir = exeDir.substr(0, pos); // Get the directory
+    }
+
+    // Append the settings folder name to the path
+    std::wstring settingsPath = exeDir + L"\\LedStripApp";
+
+    return settingsPath;
 }
 
 void App::loadSettings()
