@@ -157,6 +157,7 @@ void App::renderUI()
             {
                 m_LedController.toggleDevice();
             }
+            ImGui::Text("Color Selection");
             if (ImGui::ColorEdit3("Color", m_LedController.color))
             {
                 m_LedController.updateColor();
@@ -164,6 +165,18 @@ void App::renderUI()
             if (ImGui::SliderFloat("Brightness", &m_LedController.brightness, 0, 1))
             {
                 m_LedController.updateBrightness();
+            }
+
+            static int index;
+            ImGui::Text("Mode Selection");
+            if (ImGui::Combo("Mode", &index, Modes::modeStrings, IM_ARRAYSIZE(Modes::modeStrings)))
+            {
+                m_LedController.mode = Modes::modeBytes.at(index);
+                m_LedController.updateMode();
+            }
+            if (ImGui::SliderFloat("Speed", &m_LedController.modeSpeed, 0, 1))
+            {
+                m_LedController.updateModeSpeed();
             }
         }
     }

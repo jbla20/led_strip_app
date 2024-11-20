@@ -1,11 +1,14 @@
 #include "ledcontroller.h"
 #include "simpleble/Exceptions.h"
 #include <iostream>
+#include <algorithm>
 
 LEDController::LEDController()
 {
     color = new float[3](1.0f, 1.0f, 1.0f);
     brightness = 1.0f;
+    mode = 0x00;
+    modeSpeed = 1.0f;
     m_ConnectionStatus = BLESTATUS::UNDEFINED;
     m_IsScanning = false;
     m_IsDeviceOn = false;
@@ -40,6 +43,16 @@ void LEDController::updateColor()
 void LEDController::updateBrightness()
 {
     updateColorInternal(brightness);
+}
+
+void LEDController::updateMode()
+{
+    updateModeInternal(modeSpeed);
+}
+
+void LEDController::updateModeSpeed()
+{
+    updateModeInternal(modeSpeed);
 }
 
 void LEDController::writeCommand(SimpleBLE::ByteArray& command)
@@ -117,10 +130,23 @@ void LEDController::setDeviceOn(bool isOn)
 
 void LEDController::updateColorInternal(float intensity)
 {
-    colorCommand[1] = static_cast<char>(color[0] * intensity * 255.999);
-    colorCommand[2] = static_cast<char>(color[1] * intensity * 255.999);
-    colorCommand[3] = static_cast<char>(color[2] * intensity * 255.999);
+    colorCommand[1] = static_cast<char>(color[0] * intensity * 255.000);
+    colorCommand[2] = static_cast<char>(color[1] * intensity * 255.000);
+    colorCommand[3] = static_cast<char>(color[2] * intensity * 255.000);
     writeCommand(colorCommand);
+}
+
+void LEDController::updateModeInternal(float speed)
+{
+    using Range = std::pair<float, float>;
+    auto interp1d = [](Range range_in, Range range_out, float input) {
+        input = std::clamp(input, range_in.first, range_in.second);
+        return range_out.first + (input - range_in.first) * (range_out.second - range_out.first) / (range_in.second - range_in.first);
+    };
+
+    modeCommand[1] = static_cast<char>(mode);
+    modeCommand[2] = static_cast<char>(interp1d({ 0.0, 1.0 }, { 1.0, 31.0 }, 1 - speed));
+    writeCommand(modeCommand);
 }
 
 void LEDController::scanAndConnectInternal()
