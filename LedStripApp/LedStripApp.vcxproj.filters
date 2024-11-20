@@ -13,6 +13,12 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Header Files\imgui">
+      <UniqueIdentifier>{db42ec63-8d21-4c28-b2be-615253fd1c7f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\simpleble">
+      <UniqueIdentifier>{26456d2a-f565-49f5-be4a-c106ca815fe2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -50,30 +56,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\imgui\imconfig.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\imgui\imgui.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\imgui\imgui_internal.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\imgui\imstb_rectpack.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\imgui\imstb_textedit.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\imgui\imstb_truetype.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\imgui_impl_dx12.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\imgui_impl_win32.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\app.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -83,44 +65,81 @@
     <ClInclude Include="src\ledcontroller.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\simpleble\Adapter.h">
+    <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\simpleble\AdapterSafe.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\imgui\imstb_truetype.h">
+      <Filter>Header Files\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="src\simpleble\Characteristic.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\imgui\imconfig.h">
+      <Filter>Header Files\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="src\simpleble\Descriptor.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\imgui\imgui.h">
+      <Filter>Header Files\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="src\simpleble\Exceptions.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\imgui_impl_dx12.h">
+      <Filter>Header Files\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="src\simpleble\Logging.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\imgui_impl_win32.h">
+      <Filter>Header Files\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="src\simpleble\Peripheral.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\imgui\imgui_internal.h">
+      <Filter>Header Files\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="src\simpleble\PeripheralSafe.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\imgui\imstb_rectpack.h">
+      <Filter>Header Files\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="src\simpleble\Service.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\simpleble\SimpleBLE.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\simpleble\Types.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\imgui\imstb_textedit.h">
+      <Filter>Header Files\imgui</Filter>
     </ClInclude>
     <ClInclude Include="src\simpleble\Utils.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\simpleble</Filter>
+    </ClInclude>
+    <ClInclude Include="src\simpleble\Types.h">
+      <Filter>Header Files\simpleble</Filter>
+    </ClInclude>
+    <ClInclude Include="src\simpleble\SimpleBLE.h">
+      <Filter>Header Files\simpleble</Filter>
+    </ClInclude>
+    <ClInclude Include="src\simpleble\Service.h">
+      <Filter>Header Files\simpleble</Filter>
+    </ClInclude>
+    <ClInclude Include="src\simpleble\PeripheralSafe.h">
+      <Filter>Header Files\simpleble</Filter>
+    </ClInclude>
+    <ClInclude Include="src\simpleble\Peripheral.h">
+      <Filter>Header Files\simpleble</Filter>
+    </ClInclude>
+    <ClInclude Include="src\simpleble\Logging.h">
+      <Filter>Header Files\simpleble</Filter>
+    </ClInclude>
+    <ClInclude Include="src\simpleble\Exceptions.h">
+      <Filter>Header Files\simpleble</Filter>
+    </ClInclude>
+    <ClInclude Include="src\simpleble\Descriptor.h">
+      <Filter>Header Files\simpleble</Filter>
+    </ClInclude>
+    <ClInclude Include="src\simpleble\Characteristic.h">
+      <Filter>Header Files\simpleble</Filter>
+    </ClInclude>
+    <ClInclude Include="src\simpleble\AdapterSafe.h">
+      <Filter>Header Files\simpleble</Filter>
+    </ClInclude>
+    <ClInclude Include="src\simpleble\Adapter.h">
+      <Filter>Header Files\simpleble</Filter>
     </ClInclude>
     <ClInclude Include="src\simpleble\export.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\simpleble</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="LedStripApp.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="led.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>
