@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <d3d12.h>
 #include <dxgi1_4.h>
 #include "imgui_impl_win32.h"
@@ -33,9 +34,10 @@ private:
 	ID3D12Resource* m_mainRenderTargetResource[NUM_BACK_BUFFERS];
 	D3D12_CPU_DESCRIPTOR_HANDLE  m_mainRenderTargetDescriptor[NUM_BACK_BUFFERS];
 	bool m_IsOpen;
+	const wchar_t* m_name;
 
 public:
-	Window();
+	Window(const wchar_t* name);
 
 	bool init();
 	void render();

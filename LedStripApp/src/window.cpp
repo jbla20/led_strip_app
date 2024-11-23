@@ -13,7 +13,7 @@
 // Forward declare message handler from imgui_impl_win32.cpp
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-Window::Window()
+Window::Window(const wchar_t* name) : m_name(name)
 {
     m_hwnd = nullptr;
     m_windowClass = {};
@@ -51,10 +51,20 @@ bool Window::init()
 
 bool Window::initWindow()
 {
+    // Query the display size
+    int screenWidth = GetSystemMetrics(SM_CXSCREEN);  // Width of the screen
+    int screenHeight = GetSystemMetrics(SM_CYSCREEN); // Height of the screen
+
+    // Calculate the initial window size and position (e.g., centered)
+    int windowWidth = screenWidth * 0.8;  // 80% of screen width
+    int windowHeight = screenHeight * 0.8; // 80% of screen height
+    int windowPosX = (screenWidth - windowWidth) / 2; // Center horizontally
+    int windowPosY = (screenHeight - windowHeight) / 2; // Center vertically
+
     // Create application window
     m_windowClass = { sizeof(m_windowClass), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(nullptr), nullptr, nullptr, nullptr, nullptr, L"Led Strip App", nullptr };
     RegisterClassExW(&m_windowClass);
-    m_hwnd = CreateWindowW(m_windowClass.lpszClassName, L"Led Strip Controller", WS_OVERLAPPEDWINDOW, 50, 50, 400, 400, nullptr, nullptr, m_windowClass.hInstance, this);
+    m_hwnd = CreateWindowW(m_windowClass.lpszClassName, m_name, WS_OVERLAPPEDWINDOW, windowPosX, windowPosY, windowWidth, windowHeight, nullptr, nullptr, m_windowClass.hInstance, this);
     
     return m_hwnd != nullptr;
 }

@@ -167,6 +167,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\light_tab.cpp" />
     <ClCompile Include="src\window.cpp" />
     <ClCompile Include="src\app.cpp" />
     <ClCompile Include="src\imgui\imgui.cpp" />
@@ -176,11 +177,13 @@
     <ClCompile Include="src\imgui\imgui_widgets.cpp" />
     <ClCompile Include="src\imgui_impl_dx12.cpp" />
     <ClCompile Include="src\imgui_impl_win32.cpp" />
-    <ClCompile Include="src\ledcontroller.cpp" />
+    <ClCompile Include="src\led_controller.cpp" />
     <ClCompile Include="src\main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
+    <ClInclude Include="src\app_tab.h" />
+    <ClInclude Include="src\light_tab.h" />
     <ClInclude Include="src\simpleble\Adapter.h" />
     <ClInclude Include="src\simpleble\AdapterSafe.h" />
     <ClInclude Include="src\simpleble\Characteristic.h" />
@@ -204,7 +207,7 @@
     <ClInclude Include="src\imgui\imstb_truetype.h" />
     <ClInclude Include="src\imgui_impl_dx12.h" />
     <ClInclude Include="src\imgui_impl_win32.h" />
-    <ClInclude Include="src\ledcontroller.h" />
+    <ClInclude Include="src\led_controller.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="LedStripApp.rc" />

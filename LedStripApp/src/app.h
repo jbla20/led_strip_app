@@ -1,25 +1,34 @@
 #pragma once
 
 #include "window.h"
-#include "ledcontroller.h"
+#include "led_controller.h"
+#include "app_tab.h"
+#include "light_tab.h"
 
 class App
 {
-private:
-	Window m_Window;
-	LEDController m_LedController;
-
 public:
 	App();
+	~App();
 
 	bool init();
 	void run();
 
-	~App();
+private:
+	void render();
+
+	std::wstring fetch_settings_path();
+	void load_settings();
+	void save_settings();
 
 private:
-	std::wstring fetchSettingsPath();
-	void loadSettings();
-	void saveSettings();
-	void renderUI();
+	Window m_window;
+	LEDController m_led_controller;
+
+    AppTab* m_current_tab = nullptr;
+
+    friend class LightTab;
+    LightTab m_light_tab = LightTab(this, "Light");
+
+    AppTab* m_tabs[1] = { &m_light_tab };
 };
