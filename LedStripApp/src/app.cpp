@@ -1,6 +1,7 @@
 #include <shlobj.h>
 #include <sstream>
 #include <fstream>
+#include <iostream>
 #include <filesystem>
 #include "app.h"
 #include "imgui.h"
@@ -8,7 +9,29 @@
 
 #pragma comment(lib, "shell32.lib")
 
-App::App() : m_led_controller(), m_window(L"LED Strip Controller") {}
+App::App() : m_window(L"LED Strip Controller") 
+{
+    std::string name = "Default";
+    m_led_controllers.emplace_back(std::make_unique<LEDController>(this, name));
+    m_selected_controller = 0;
+
+    m_led_configs.emplace_back(std::make_unique<LEDConfiguration>(name, std::array<float, 3>{1.0f, 1.0f, 1.0f}, 1.0f, Mode(0, 0.0f)));
+    m_selected_controller_configs = { { name, 0 } };
+}
+
+App::~App() {
+    for (size_t i = 0; i < m_led_controllers.size(); i++)
+    {
+        if (m_led_controllers[i]->is_device_on())
+        {
+            m_led_controllers[i]->toggle_device();
+        }
+    }
+    save_settings();
+    ImGui_ImplDX12_Shutdown();
+    ImGui_ImplWin32_Shutdown();
+    ImGui::DestroyContext();
+}
 
 bool App::init()
 {
@@ -85,7 +108,7 @@ void App::run()
 
     while (m_window.isOpen())
     {
-        m_led_controller.try_join_scanning_thread();
+        led_controller()->try_join_scanning_thread();
         render();
         m_window.render();
     }
@@ -169,7 +192,7 @@ void App::load_settings()
         return;
     }
 
-    std::ifstream file(path + L"\\settings.txt");
+    std::ifstream file(path + L"\\settings1.txt");
     if (!file.is_open())
     {
         save_settings();
@@ -182,11 +205,11 @@ void App::load_settings()
         std::string value = line.substr(line.find_first_of("=") + 1);
         if (line.find("name=") != std::string::npos)
         {
-           memcpy(m_led_controller.name, value.c_str(), value.size());
+            led_controller()->m_name = value;
         }
         else if (line.find("on=") != std::string::npos)
         {
-            m_led_controller.set_device_on_flag(std::stoi(value));
+            led_controller()->set_device_on_flag(std::stoi(value));
         }
         else if (line.find("color=") != std::string::npos) 
         {
@@ -195,20 +218,20 @@ void App::load_settings()
             int i = 0;
             while (ss >> color_val)
             {   
-                m_led_controller.color[i++] = std::stof(color_val);
+                led_controller()->led_config()->color[i++] = std::stof(color_val);
             }
         }
         else if (line.find("brightness=") != std::string::npos)
         {
-            m_led_controller.brightness = std::stof(value);
+            led_controller()->led_config()->brightness = std::stof(value);
         }
         else if (line.find("mode_index=") != std::string::npos)
         {
-            m_led_controller.mode.index = std::stoi(value);
+            led_controller()->led_config()->mode.index = std::stoi(value);
         }
         else if (line.find("mode_speed=") != std::string::npos)
         {
-            m_led_controller.mode.speed = std::stof(value);
+            led_controller()->led_config()->mode.speed = std::stof(value);
         }
     }
     file.close();
@@ -232,20 +255,92 @@ void App::save_settings()
     {
         return;
     }
-    file << "name=" << m_led_controller.name << "\n";
-    file << "on=" << m_led_controller.is_device_on() << "\n";
-    file << "color=" << m_led_controller.color[0] << " " << m_led_controller.color[1] << " " << m_led_controller.color[2] << "\n";
-    file << "brightness=" << m_led_controller.brightness << "\n";
-    file << "mode_index=" << m_led_controller.mode.index << "\n";
-    file << "mode_speed=" << m_led_controller.mode.speed << "\n";
+
+    file << "name=" << led_controller()->m_name << "\n";
+    file << "on=" << led_controller()->is_device_on() << "\n";
+    file << "color=" << led_controller()->led_config()->color[0] << " " << led_controller()->led_config()->color[1] << " " << led_controller()->led_config()->color[2] << "\n";
+    file << "brightness=" << led_controller()->led_config()->brightness << "\n";
+    file << "mode_index=" << led_controller()->led_config()->mode.index << "\n";
+    file << "mode_speed=" << led_controller()->led_config()->mode.speed << "\n";
 
     file.close();
 }
 
+bool App::create_new_controller(std::string name)
+{
+    m_led_controllers.emplace_back(std::make_unique<LEDController>(this, name));
+    m_selected_controller_configs[name] = 0;
+    return true;
+}
 
-App::~App() {
-    save_settings();
-    ImGui_ImplDX12_Shutdown();
-    ImGui_ImplWin32_Shutdown();
-    ImGui::DestroyContext();
+bool App::update_controller(int index)
+{
+    try
+    {
+        if (index < 0 || index >= m_led_controllers.size())
+        {
+            throw std::out_of_range("Index " + std::to_string(index) + " is out of range");
+        }
+
+        m_selected_controller = index;
+    }
+    catch (std::out_of_range& err)
+    {
+        std::cout << err.what() << std::endl;
+        return false;
+    }
+}
+
+bool App::create_new_config(std::string name)
+{
+    m_led_configs.emplace_back(std::make_unique<LEDConfiguration>(*led_controller()->led_config()));
+    m_led_configs.back()->name = name;
+    return true;
+}
+
+bool App::update_controller_config(int index)
+{
+    try
+    {
+        m_selected_controller_configs.at(led_controller()->m_name) = index;
+        led_controller()->update_all();
+    }
+    catch (std::out_of_range& err)
+    {
+        std::cout << err.what() << std::endl;
+        return false;
+    }
+}
+
+LEDController* App::led_controller()
+{
+    try
+    {
+        return m_led_controllers.at(m_selected_controller).get();
+    }
+    catch (std::out_of_range& err)
+    {
+        std::cout << err.what() << std::endl;
+        return nullptr;
+    }
+}
+
+std::vector<std::string> App::led_controller_names()
+{
+    std::vector<std::string> names;
+    std::ranges::transform(m_led_controllers, std::back_inserter(names), [](std::unique_ptr<LEDController>& controller) 
+        { return controller->m_name; }
+    );
+    names.erase(names.begin()); // TODO: Smarter way to ignore first element
+    return names;
+}
+
+std::vector<std::string> App::led_config_names()
+{
+    std::vector<std::string> names;
+    std::ranges::transform(m_led_configs, std::back_inserter(names), [](std::unique_ptr<LEDConfiguration>& controller) 
+        { return controller->name; }
+    );
+    names.erase(names.begin()); // TODO: Smarter way to ignore first element
+    return names;
 }

@@ -1,7 +1,13 @@
+#include <vector>
+#include <ranges>
+#include <algorithm>
+
 #include "light_tab.h"
 #include "app.h"
 
-LightTab::LightTab(App* app, std::string name) : AppTab(app, name) { }
+LightTab::LightTab(App* app, std::string name) : AppTab(app, name) 
+{ 
+}
 
 void LightTab::on_open()
 {
@@ -35,52 +41,116 @@ void LightTab::render()
 
     // Creating ui for different dock windows
     if (ImGui::Begin("Bluetooth Connect")) {
-        ImGui::Text(m_app->m_led_controller.connection_status_str().c_str());
-        if (!m_app->m_led_controller.is_scanning())
+        // Create new known device
+        if (ImGui::InputText("##New device name", m_new_controller_name, sizeof(m_new_controller_name), ImGuiInputTextFlags_CharsNoBlank));
+        if (ImGui::Button("Create"))
         {
-            if (!m_app->m_led_controller.is_connected())
+            auto name_exists = [&](char in_str[]) {
+                return std::ranges::any_of(m_app->led_controller_names(), [in_str](const std::string& name) { return std::string(in_str) == name; });
+            };
+            if (m_new_controller_name[0] != '\0' && !name_exists(m_new_controller_name))
             {
-                if (ImGui::InputText("Device Name", m_app->m_led_controller.name, IM_ARRAYSIZE(m_app->m_led_controller.name)));
+                if (m_app->create_new_controller(std::string(m_new_controller_name)))
+                {
+                    std::cout << "Created new controller." << std::endl;
+                    m_app->update_controller(m_app->m_led_controllers.size() - 1);
+                }
+            }
+        }
+
+        // List all known devices
+        std::vector<const char*> controller_items;
+        controller_items.reserve(controller_items.size());
+        std::vector<std::string> controller_names = m_app->led_controller_names();
+        for (const auto& item : controller_names)
+        {
+            controller_items.push_back(item.c_str());
+        }
+        ImGui::Text("Known Devices");
+        if (ImGui::ListBox(" ", &m_selected_controller, controller_items.data(), controller_items.size(), 10))
+        {
+            m_app->update_controller(m_selected_controller + 1);
+        }
+
+        // Connect
+        // TODO: Implement deleting of controllers
+        ImGui::Text(m_app->led_controller()->connection_status_str().c_str());
+        if (!m_app->led_controller()->is_scanning())
+        {
+            if (!m_app->led_controller()->is_connected())
+            {
                 if (ImGui::Button("Connect"))
                 {
-                    m_app->m_led_controller.scan_and_connect();
+                    m_app->led_controller()->scan_and_connect();
                 }
             }
         }
     }
-    ImGui::End();
+    ImGui::End(); // Bluetooth Connect
 
     if (ImGui::Begin("Light Configs")) 
     {
+        std::vector<const char*> config_items;
+        config_items.reserve(config_items.size());
+        std::vector<std::string> config_names = m_app->led_config_names();
+        for (const auto& item : config_names)
+        {
+            config_items.push_back(item.c_str());
+        }
+        ImGui::Text("Available configs");
+        if (ImGui::ListBox(" ", &m_selected_config, config_items.data(), config_items.size(), 10))
+        {
+            m_app->update_controller_config(m_selected_config + 1);
+        }
+
+        ImGui::Text("New config name");
+        if (ImGui::InputText("##New config name", m_new_config_name, sizeof(m_new_config_name), ImGuiInputTextFlags_CharsNoBlank))
+        {
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Create"))
+        {
+            auto name_exists = [&](char in_str[]) {
+                return std::ranges::any_of(m_app->led_config_names(), [in_str](const std::string& name) { return std::string(in_str) == name; } );
+            };
+            if (m_new_config_name[0] != '\0' && !name_exists(m_new_config_name))
+            {
+                if (m_app->create_new_config(std::string(m_new_config_name)))
+                {
+                    std::cout << "Created new config." << std::endl;
+                    m_selected_config = -1;
+                }
+            }
+        }
     }
-    ImGui::End();
+    ImGui::End(); // Light Configs
 
     if (ImGui::Begin("Light Settings"))
     {
         ImGui::Text("Device Status");
-        if (ImGui::Button(m_app->m_led_controller.is_device_on() ? "On" : "Off"))
+        if (ImGui::Button(m_app->led_controller()->is_device_on() ? "On" : "Off"))
         {
-            m_app->m_led_controller.toggle_device();
+            m_app->led_controller()->toggle_device();
         }
         ImGui::Text("Color Selection");
-        if (ImGui::ColorEdit3("Color", m_app->m_led_controller.color))
+        if (ImGui::ColorEdit3("Color", m_app->led_controller()->led_config()->color.data()))
         {
-            m_app->m_led_controller.update_rgb();
+            m_app->led_controller()->update_rgb();
         }
-        if (ImGui::SliderFloat("Brightness", &m_app->m_led_controller.brightness, 0, 1))
+        if (ImGui::SliderFloat("Brightness", &m_app->led_controller()->led_config()->brightness, 0, 1))
         {
-            m_app->m_led_controller.update_rgb();
+            m_app->led_controller()->update_rgb();
         }
 
         ImGui::Text("Mode Selection");
-        if (ImGui::Combo("Mode", &m_app->m_led_controller.mode.index, m_app->m_led_controller.mode.mode_strings, IM_ARRAYSIZE(m_app->m_led_controller.mode.mode_strings)))
+        if (ImGui::Combo("Mode", &m_app->led_controller()->led_config()->mode.index, m_app->led_controller()->led_config()->mode.mode_strings, IM_ARRAYSIZE(m_app->led_controller()->led_config()->mode.mode_strings)))
         {
-            m_app->m_led_controller.update_mode();
+            m_app->led_controller()->update_mode();
         }
-        if (ImGui::SliderFloat("Speed", &m_app->m_led_controller.mode.speed, 0, 1))
+        if (ImGui::SliderFloat("Speed", &m_app->led_controller()->led_config()->mode.speed, 0, 1))
         {
-            m_app->m_led_controller.update_mode();
+            m_app->led_controller()->update_mode();
         }
     }
-    ImGui::End();
+    ImGui::End(); // Light Settings
 }
