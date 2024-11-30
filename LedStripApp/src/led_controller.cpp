@@ -26,11 +26,9 @@ LEDController::~LEDController()
 
 LEDConfiguration* LEDController::led_config()
 {
-    std::cout << "This is a test" << std::endl;
     try
     {
         int index = m_app->m_selected_controller_configs.at(m_name);
-        std::cout << index << std::endl;
         return m_app->m_led_configs.at(index).get();
     }
     catch (const std::out_of_range& e)
@@ -122,9 +120,9 @@ std::string LEDController::connection_status_str()
 
 void LEDController::update_all()
 {
+    set_device_on(led_config()->device_on);
     update_rgb();
     update_mode();
-    set_device_on(led_config()->device_on);
 }
 
 void LEDController::set_device_on(bool is_on)

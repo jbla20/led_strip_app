@@ -3,7 +3,9 @@
 #include <fstream>
 #include <iostream>
 #include <filesystem>
+#include <ranges>
 #include "app.h"
+#include "yaml-cpp/yaml.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 
@@ -15,19 +17,15 @@ App::App() : m_window(L"LED Strip Controller")
     m_led_controllers.emplace_back(std::make_unique<LEDController>(this, name));
     m_selected_controller = 0;
 
-    m_led_configs.emplace_back(std::make_unique<LEDConfiguration>(name, std::array<float, 3>{1.0f, 1.0f, 1.0f}, 1.0f, Mode(0, 0.0f)));
+    m_led_configs.emplace_back(std::make_unique<LEDConfiguration>(name, false, std::array<float, 3>{1.0f, 1.0f, 1.0f}, 1.0f, Mode(0, 0.0f)));
     m_selected_controller_configs = { { name, 0 } };
 }
 
 App::~App() {
-    for (size_t i = 0; i < m_led_controllers.size(); i++)
-    {
-        if (m_led_controllers[i]->is_device_on())
-        {
-            m_led_controllers[i]->toggle_device();
-        }
-    }
     save_settings();
+    std::ranges::for_each(m_led_controllers, [](const std::unique_ptr<LEDController>& controller)
+        { if (controller->is_device_on()) controller->toggle_device(); }
+    );
     ImGui_ImplDX12_Shutdown();
     ImGui_ImplWin32_Shutdown();
     ImGui::DestroyContext();
@@ -192,49 +190,102 @@ void App::load_settings()
         return;
     }
 
-    std::ifstream file(path + L"\\settings1.txt");
-    if (!file.is_open())
-    {
-        save_settings();
-        return;
-    }
+    // Construct the settings.yaml file path
+    std::wstring settings_file = path + L"\\settings.yaml";
 
-    std::string line;
-    while (std::getline(file, line))
+    // Open the YAML file
+    try
     {
-        std::string value = line.substr(line.find_first_of("=") + 1);
-        if (line.find("name=") != std::string::npos)
+        // Construct the settings.yaml file path
+        std::ifstream file(settings_file);
+        if (!file.is_open())
         {
-            led_controller()->m_name = value;
+            save_settings();  // If file doesn't exist, save current settings
+            return;
         }
-        else if (line.find("on=") != std::string::npos)
+
+        YAML::Node settings = YAML::Load(file);  // Load YAML from file
+
+        // Load LED configurations
+        if (settings["configurations"])
         {
-            led_controller()->set_device_on_flag(std::stoi(value));
-        }
-        else if (line.find("color=") != std::string::npos) 
-        {
-            std::istringstream ss(value);
-            std::string color_val;
-            int i = 0;
-            while (ss >> color_val)
-            {   
-                led_controller()->led_config()->color[i++] = std::stof(color_val);
+            m_led_configs.resize(1 + settings["configurations"].size());
+            for (size_t i = 1; i < m_led_configs.size(); i++)
+            {
+                // Predefine parameters needed to load LED configuration
+                std::string name = "\0";
+                bool device_on = false;
+                std::array<float, 3> color = { 1.0f, 1.0f, 1.0f };
+                float brightness = 1.0f;
+                Mode mode = { 0, 0.0f };
+
+                // Load values
+                const YAML::Node& config_yaml = settings["configurations"][i];
+                if (config_yaml["name"])
+                    name = config_yaml["name"].as<std::string>();
+
+                if (config_yaml["device_on"])
+                    device_on = config_yaml["device_on"].as<bool>();
+
+                if (config_yaml["color"])
+                {
+                    const YAML::Node& color_yaml = config_yaml["color"];
+                    if (color_yaml.size() == 3)
+                    {
+                        color[0] = color_yaml[0].as<float>();
+                        color[1] = color_yaml[1].as<float>();
+                        color[2] = color_yaml[2].as<float>();
+                    }
+                }
+
+                if (config_yaml["brightness"])
+                    brightness = config_yaml["brightness"].as<float>();
+
+                if (config_yaml["mode"])
+                {
+                    const YAML::Node& mode_yaml = config_yaml["mode"];
+                    if (mode_yaml["index"])
+                        mode.index = mode_yaml["index"].as<int>();
+                    if (mode_yaml["speed"])
+                        mode.speed = mode_yaml["speed"].as<float>();
+                }
+
+                // Load configuration
+                m_led_configs[i] = std::make_unique<LEDConfiguration>(name, device_on, color, brightness, mode);
             }
         }
-        else if (line.find("brightness=") != std::string::npos)
+
+        // Load LED controllers
+        if (settings["controllers"])
         {
-            led_controller()->led_config()->brightness = std::stof(value);
+            m_led_controllers.resize(1 + settings["controllers"].size());
+            for (size_t i = 1; i < m_led_controllers.size(); i++)
+            {
+                // Predefine parameters needed to load LED controller
+                std::string name = "\0";
+                int selected_config = 0;
+
+                // Load values
+                const YAML::Node& controller_yaml = settings["controllers"][i];
+                if (controller_yaml["name"])
+                    name = controller_yaml["name"].as<std::string>();
+
+                if (controller_yaml["selected_config"])
+                    selected_config = controller_yaml["selected_config"].as<int>();
+
+                // Create controller
+                m_led_controllers[i] = std::make_unique<LEDController>(this, name);
+                m_selected_controller_configs[name] = selected_config;
+            }
         }
-        else if (line.find("mode_index=") != std::string::npos)
-        {
-            led_controller()->led_config()->mode.index = std::stoi(value);
-        }
-        else if (line.find("mode_speed=") != std::string::npos)
-        {
-            led_controller()->led_config()->mode.speed = std::stof(value);
-        }
+
+        file.close();
     }
-    file.close();
+    catch (const YAML::Exception& ex)
+    {
+        // Handle YAML exceptions (e.g., file errors, parsing errors)
+        std::cerr << "Failed to load settings: " << ex.what() << "\n";
+    }
 }
 
 void App::save_settings()
@@ -250,20 +301,45 @@ void App::save_settings()
         std::filesystem::create_directory(path);
     }
 
-    std::ofstream file(path + L"\\settings.txt", std::fstream::trunc);
-    if (!file.is_open())
+    // Construct the settings.yaml file path
+    std::wstring settings_file = path + L"\\settings.yaml";
+
+    try
     {
-        return;
+        // Create a YAML node and populate it with settings
+        YAML::Node settings;
+        for (size_t i = 1; i < m_led_configs.size(); i++)
+        {
+            settings["configurations"][i]["name"] = m_led_configs[i]->name;
+            settings["configurations"][i]["device_on"] = m_led_configs[i]->device_on;
+            settings["configurations"][i]["color"] = YAML::Node(YAML::NodeType::Sequence); // List for color values
+            settings["configurations"][i]["color"].push_back(m_led_configs[i]->color[0]);
+            settings["configurations"][i]["color"].push_back(m_led_configs[i]->color[1]);
+            settings["configurations"][i]["color"].push_back(m_led_configs[i]->color[2]);
+            settings["configurations"][i]["brightness"] = m_led_configs[i]->brightness;
+            settings["configurations"][i]["mode"]["index"] = m_led_configs[i]->mode.index;
+            settings["configurations"][i]["mode"]["speed"] = m_led_configs[i]->mode.speed;
+        }
+
+        for (size_t i = 1; i < m_led_controllers.size(); i++)
+        {
+            settings["controllers"][i]["name"] = m_led_controllers[i]->m_name;
+            settings["controllers"][i]["selected_config"] = m_selected_controller_configs[m_led_controllers[i]->m_name];
+        }
+
+        // Save the YAML node to the file
+        std::ofstream file(settings_file);
+        if (!file.is_open())
+        {
+            return;
+        }
+        file << settings; // Write YAML to the file
     }
-
-    file << "name=" << led_controller()->m_name << "\n";
-    file << "on=" << led_controller()->is_device_on() << "\n";
-    file << "color=" << led_controller()->led_config()->color[0] << " " << led_controller()->led_config()->color[1] << " " << led_controller()->led_config()->color[2] << "\n";
-    file << "brightness=" << led_controller()->led_config()->brightness << "\n";
-    file << "mode_index=" << led_controller()->led_config()->mode.index << "\n";
-    file << "mode_speed=" << led_controller()->led_config()->mode.speed << "\n";
-
-    file.close();
+    catch (const YAML::Exception& ex)
+    {
+        // Handle YAML exceptions (e.g., serialization errors)
+        std::cerr << "Failed to save settings: " << ex.what() << "\n";
+    }
 }
 
 bool App::create_new_controller(std::string name)

@@ -34,12 +34,12 @@ private:
 class LEDConfiguration
 {
 public:
-	explicit LEDConfiguration(std::string name, std::array<float, 3> color, float brightness, Mode mode)
-		: name(name), color(color), brightness(brightness), mode(mode) {}
+	explicit LEDConfiguration(std::string name, bool device_on, std::array<float, 3> color, float brightness, Mode mode)
+		: name(name), device_on(device_on), color(color), brightness(brightness), mode(mode) {}
 	~LEDConfiguration() = default;
 
 public:
-	std::string name = "\0";
+	std::string name;
 	bool device_on = false;
 	std::array<float, 3> color;
 	float brightness;
