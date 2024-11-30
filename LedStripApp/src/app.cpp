@@ -367,6 +367,30 @@ bool App::update_controller(int index)
     }
 }
 
+bool App::delete_controller(int index)
+{
+    try
+    {
+        if (index < 0 || index >= m_led_controllers.size())
+        {
+            throw std::out_of_range("Index " + std::to_string(index) + " is out of range");
+        }
+
+        if (m_led_controllers[index]->is_device_on())
+        {
+            m_led_controllers[index]->toggle_device();
+        }
+        m_selected_controller_configs.erase(m_led_controllers[index]->m_name);
+        m_led_controllers.erase(m_led_controllers.begin() + index);
+        m_selected_controller = 0;
+    }
+    catch (std::out_of_range& err)
+    {
+        std::cout << err.what() << std::endl;
+        return false;
+    }
+}
+
 bool App::create_new_config(std::string name)
 {
     m_led_configs.emplace_back(std::make_unique<LEDConfiguration>(*led_controller()->led_config()));
@@ -379,6 +403,37 @@ bool App::update_controller_config(int index)
     try
     {
         m_selected_controller_configs.at(led_controller()->m_name) = index;
+        led_controller()->update_all();
+    }
+    catch (std::out_of_range& err)
+    {
+        std::cout << err.what() << std::endl;
+        return false;
+    }
+}
+
+bool App::delete_config(int index)
+{
+    try
+    {
+        if (index < 0 || index >= m_led_configs.size())
+        {
+            throw std::out_of_range("Index " + std::to_string(index) + " is out of range");
+        }
+
+        m_led_configs.erase(m_led_configs.begin() + index);
+        for (size_t i = 0; i < m_led_controllers.size(); i++)
+        {
+            if (m_selected_controller_configs[m_led_controllers[i]->m_name] == index)
+            {
+                m_selected_controller_configs[m_led_controllers[i]->m_name] = 0;
+            }
+            else if (m_selected_controller_configs[m_led_controllers[i]->m_name] > index)
+            {
+                m_selected_controller_configs[m_led_controllers[i]->m_name] -= 1;
+            }
+
+        }
         led_controller()->update_all();
     }
     catch (std::out_of_range& err)

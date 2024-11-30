@@ -182,6 +182,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
+    <ClInclude Include="src\helpers.h" />
     <ClInclude Include="src\led_configuration.h" />
     <ClInclude Include="src\app_tab.h" />
     <ClInclude Include="src\light_tab.h" />

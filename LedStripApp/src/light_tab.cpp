@@ -4,6 +4,7 @@
 
 #include "light_tab.h"
 #include "app.h"
+#include "helpers.h"
 
 LightTab::LightTab(App* app, std::string name) : AppTab(app, name) 
 { 
@@ -41,19 +42,15 @@ void LightTab::render()
 
     // Creating ui for different dock windows
     if (ImGui::Begin("Bluetooth Connect")) {
-        // Create new known device
-        if (ImGui::InputText("##New device name", m_new_controller_name, sizeof(m_new_controller_name), ImGuiInputTextFlags_CharsNoBlank));
-        if (ImGui::Button("Create"))
+        // Connect
+        ImGui::Text(m_app->led_controller()->connection_status_str().c_str());
+        if (!m_app->led_controller()->is_scanning())
         {
-            auto name_exists = [&](char in_str[]) {
-                return std::ranges::any_of(m_app->led_controller_names(), [in_str](const std::string& name) { return std::string(in_str) == name; });
-            };
-            if (m_new_controller_name[0] != '\0' && !name_exists(m_new_controller_name))
+            if (!m_app->led_controller()->is_connected())
             {
-                if (m_app->create_new_controller(std::string(m_new_controller_name)))
+                if (ImGui::Button("Connect"))
                 {
-                    std::cout << "Created new controller." << std::endl;
-                    m_app->update_controller(m_app->m_led_controllers.size() - 1);
+                    m_app->led_controller()->scan_and_connect();
                 }
             }
         }
@@ -72,23 +69,48 @@ void LightTab::render()
             m_app->update_controller(m_selected_controller + 1);
         }
 
-        // Connect
-        // TODO: Implement deleting of controllers
-        ImGui::Text(m_app->led_controller()->connection_status_str().c_str());
-        if (!m_app->led_controller()->is_scanning())
+        // Create new known device
+        ImGui::Text("New device");
+        ImGui::InputText("##New device", m_new_controller_name, sizeof(m_new_controller_name), ImGuiInputTextFlags_CharsNoBlank);
+        if (ImGui::Button("Create"))
         {
-            if (!m_app->led_controller()->is_connected())
+            auto name_exists = [&](char in_str[]) {
+                return std::ranges::any_of(m_app->led_controller_names(), [in_str](const std::string& name) { return std::string(in_str) == name; });
+            };
+            if (m_new_controller_name[0] != '\0' && !name_exists(m_new_controller_name))
             {
-                if (ImGui::Button("Connect"))
+                if (m_app->create_new_controller(std::string(m_new_controller_name)))
                 {
-                    m_app->led_controller()->scan_and_connect();
+                    std::cout << "Created new controller." << std::endl;
+                    m_app->update_controller(m_app->m_led_controllers.size() - 1);
                 }
             }
         }
+
+        ImGui::Text("Rename device");
+        ImGui::InputText("##Rename device", m_rename_controller_name, sizeof(m_rename_controller_name), ImGuiInputTextFlags_CharsNoBlank);
+        ImGui::SameLine();
+        if (ImGui::Button("Save"))
+        {
+            if (m_rename_controller_name[0] != '\0' && !helpers::exists_in_vector(m_app->led_controller_names(), std::string(m_rename_controller_name)))
+            {
+                // TODO: Enable renaming of devices (need map between alias and actual name)
+            }
+        }
+
+        if (ImGui::Button("Delete"))
+        {
+            std::optional<size_t> delete_controller_index = helpers::index_in_vector(m_app->led_controller_names(), m_app->led_controller()->m_name);
+            if (delete_controller_index)
+            {
+                m_app->delete_controller(*delete_controller_index + 1);
+            }
+        }
+
     }
     ImGui::End(); // Bluetooth Connect
 
-    if (ImGui::Begin("Light Configs")) 
+    if (ImGui::Begin("Light Configs"))
     {
         std::vector<const char*> config_items;
         config_items.reserve(config_items.size());
@@ -103,23 +125,38 @@ void LightTab::render()
             m_app->update_controller_config(m_selected_config + 1);
         }
 
-        ImGui::Text("New config name");
-        if (ImGui::InputText("##New config name", m_new_config_name, sizeof(m_new_config_name), ImGuiInputTextFlags_CharsNoBlank))
-        {
-        }
+        ImGui::Text("New config");
+        ImGui::InputText("##New config", m_new_config_name, sizeof(m_new_config_name), ImGuiInputTextFlags_CharsNoBlank);
         ImGui::SameLine();
         if (ImGui::Button("Create"))
         {
-            auto name_exists = [&](char in_str[]) {
-                return std::ranges::any_of(m_app->led_config_names(), [in_str](const std::string& name) { return std::string(in_str) == name; } );
-            };
-            if (m_new_config_name[0] != '\0' && !name_exists(m_new_config_name))
+            if (m_new_config_name[0] != '\0' && !helpers::exists_in_vector(m_app->led_config_names(), std::string(m_new_config_name)))
             {
                 if (m_app->create_new_config(std::string(m_new_config_name)))
                 {
                     std::cout << "Created new config." << std::endl;
-                    m_selected_config = -1;
+                    m_selected_config = 0;
                 }
+            }
+        }
+
+        ImGui::Text("Rename config");
+        ImGui::InputText("##Rename config", m_rename_config_name, sizeof(m_rename_config_name), ImGuiInputTextFlags_CharsNoBlank);
+        ImGui::SameLine();
+        if (ImGui::Button("Save"))
+        {
+            if (m_rename_config_name[0] != '\0' && !helpers::exists_in_vector(m_app->led_config_names(), std::string(m_rename_config_name)))
+            {
+                m_app->led_controller()->led_config()->name = std::string(m_rename_config_name);
+            }
+        }
+
+        if (ImGui::Button("Delete"))
+        {
+            std::optional<size_t> delete_config_index = helpers::index_in_vector(m_app->led_config_names(), m_app->led_controller()->led_config()->name);
+            if (delete_config_index)
+            {
+                m_app->delete_config(*delete_config_index + 1);
             }
         }
     }
