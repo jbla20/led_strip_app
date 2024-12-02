@@ -58,7 +58,7 @@ void LightTab::render()
         // List all known devices
         std::vector<const char*> controller_items;
         controller_items.reserve(controller_items.size());
-        std::vector<std::string> controller_names = m_app->led_controller_names();
+        std::vector<std::string> controller_names = m_app->led_controller_aliases();
         for (const auto& item : controller_names)
         {
             controller_items.push_back(item.c_str());
@@ -72,17 +72,17 @@ void LightTab::render()
         // Create new known device
         ImGui::Text("New device");
         ImGui::InputText("##New device", m_new_controller_name, sizeof(m_new_controller_name), ImGuiInputTextFlags_CharsNoBlank);
+        ImGui::SameLine();
         if (ImGui::Button("Create"))
         {
-            auto name_exists = [&](char in_str[]) {
-                return std::ranges::any_of(m_app->led_controller_names(), [in_str](const std::string& name) { return std::string(in_str) == name; });
-            };
-            if (m_new_controller_name[0] != '\0' && !name_exists(m_new_controller_name))
+            bool name_exists = helpers::exists_in_vector(m_app->led_controller_names(), std::string(m_new_controller_name)) || helpers::exists_in_vector(m_app->led_controller_aliases(), std::string(m_new_controller_name));
+            if (m_new_controller_name[0] != '\0' && !name_exists)
             {
                 if (m_app->create_new_controller(std::string(m_new_controller_name)))
                 {
                     std::cout << "Created new controller." << std::endl;
                     m_app->update_controller(m_app->m_led_controllers.size() - 1);
+                    m_selected_controller = m_app->m_led_controllers.size() - 1;
                 }
             }
         }
@@ -92,19 +92,21 @@ void LightTab::render()
         ImGui::SameLine();
         if (ImGui::Button("Save"))
         {
-            if (m_rename_controller_name[0] != '\0' && !helpers::exists_in_vector(m_app->led_controller_names(), std::string(m_rename_controller_name)))
+            bool name_exists = helpers::exists_in_vector(m_app->led_controller_names(), std::string(m_rename_controller_name)) || helpers::exists_in_vector(m_app->led_controller_aliases(), std::string(m_rename_controller_name));
+            if (m_rename_controller_name[0] != '\0' && !name_exists)
             {
-                // TODO: Enable renaming of devices (need map between alias and actual name)
+                m_app->rename_selected_controller(std::string(m_rename_controller_name));
             }
         }
 
         if (ImGui::Button("Delete"))
         {
-            std::optional<size_t> delete_controller_index = helpers::index_in_vector(m_app->led_controller_names(), m_app->led_controller()->m_name);
-            if (delete_controller_index)
-            {
-                m_app->delete_controller(*delete_controller_index + 1);
-            }
+            m_app->delete_selected_controller();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Reset"))
+        {
+            m_app->led_controller()->m_alias = m_app->led_controller()->m_name;
         }
 
     }
@@ -135,7 +137,8 @@ void LightTab::render()
                 if (m_app->create_new_config(std::string(m_new_config_name)))
                 {
                     std::cout << "Created new config." << std::endl;
-                    m_selected_config = 0;
+                    m_app->update_controller_config(m_app->m_led_configs.size() - 1);
+                    m_selected_config = m_app->m_led_configs.size() - 1;
                 }
             }
         }
@@ -147,17 +150,13 @@ void LightTab::render()
         {
             if (m_rename_config_name[0] != '\0' && !helpers::exists_in_vector(m_app->led_config_names(), std::string(m_rename_config_name)))
             {
-                m_app->led_controller()->led_config()->name = std::string(m_rename_config_name);
+                m_app->rename_selected_config(std::string(m_rename_config_name));
             }
         }
 
         if (ImGui::Button("Delete"))
         {
-            std::optional<size_t> delete_config_index = helpers::index_in_vector(m_app->led_config_names(), m_app->led_controller()->led_config()->name);
-            if (delete_config_index)
-            {
-                m_app->delete_config(*delete_config_index + 1);
-            }
+            m_app->delete_selected_config();
         }
     }
     ImGui::End(); // Light Configs

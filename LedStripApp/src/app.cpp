@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <ranges>
 #include "app.h"
+#include "helpers.h"
 #include "yaml-cpp/yaml.h"
 #include "imgui.h"
 #include "imgui_internal.h"
@@ -367,21 +368,30 @@ bool App::update_controller(int index)
     }
 }
 
-bool App::delete_controller(int index)
+bool App::rename_selected_controller(std::string new_name)
+{
+    led_controller()->m_alias = new_name;
+    return true;
+}
+
+bool App::delete_selected_controller()
 {
     try
     {
-        if (index < 0 || index >= m_led_controllers.size())
+        std::optional<int> index = helpers::index_in_vector(led_controller_names(), led_controller()->m_name);
+
+        if (!index)
         {
-            throw std::out_of_range("Index " + std::to_string(index) + " is out of range");
+            throw std::runtime_error("Controller not found");
         }
 
-        if (m_led_controllers[index]->is_device_on())
+        *index += 1; // To account for default controller
+        if (m_led_controllers[*index]->is_device_on())
         {
-            m_led_controllers[index]->toggle_device();
+            m_led_controllers[*index]->toggle_device();
         }
-        m_selected_controller_configs.erase(m_led_controllers[index]->m_name);
-        m_led_controllers.erase(m_led_controllers.begin() + index);
+        m_selected_controller_configs.erase(m_led_controllers[*index]->m_name);
+        m_led_controllers.erase(m_led_controllers.begin() + *index);
         m_selected_controller = 0;
     }
     catch (std::out_of_range& err)
@@ -412,31 +422,41 @@ bool App::update_controller_config(int index)
     }
 }
 
-bool App::delete_config(int index)
+bool App::rename_selected_config(std::string new_name)
+{
+    led_controller()->led_config()->name = new_name;
+    return true;
+}
+
+bool App::delete_selected_config()
 {
     try
     {
-        if (index < 0 || index >= m_led_configs.size())
+        std::optional<int> index = helpers::index_in_vector(led_config_names(), led_controller()->led_config()->name);
+
+        if (!index)
         {
-            throw std::out_of_range("Index " + std::to_string(index) + " is out of range");
+            throw std::runtime_error("Config not found");
         }
 
-        m_led_configs.erase(m_led_configs.begin() + index);
+        *index += 1; // To account for default config
+        m_led_configs.erase(m_led_configs.begin() + *index);
         for (size_t i = 0; i < m_led_controllers.size(); i++)
         {
-            if (m_selected_controller_configs[m_led_controllers[i]->m_name] == index)
+            if (m_selected_controller_configs[m_led_controllers[i]->m_name] == *index)
             {
                 m_selected_controller_configs[m_led_controllers[i]->m_name] = 0;
             }
-            else if (m_selected_controller_configs[m_led_controllers[i]->m_name] > index)
+            else if (m_selected_controller_configs[m_led_controllers[i]->m_name] > *index)
             {
                 m_selected_controller_configs[m_led_controllers[i]->m_name] -= 1;
             }
 
         }
         led_controller()->update_all();
+        return true;
     }
-    catch (std::out_of_range& err)
+    catch (std::runtime_error& err)
     {
         std::cout << err.what() << std::endl;
         return false;
@@ -461,6 +481,16 @@ std::vector<std::string> App::led_controller_names()
     std::vector<std::string> names;
     std::ranges::transform(m_led_controllers, std::back_inserter(names), [](std::unique_ptr<LEDController>& controller) 
         { return controller->m_name; }
+    );
+    names.erase(names.begin()); // TODO: Smarter way to ignore first element
+    return names;
+}
+
+std::vector<std::string> App::led_controller_aliases()
+{
+    std::vector<std::string> names;
+    std::ranges::transform(m_led_controllers, std::back_inserter(names), [](std::unique_ptr<LEDController>& controller)
+        { return controller->m_alias; }
     );
     names.erase(names.begin()); // TODO: Smarter way to ignore first element
     return names;

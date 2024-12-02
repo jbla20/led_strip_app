@@ -8,7 +8,7 @@
 namespace helpers
 {
 	template <typename T>
-    std::optional<size_t> index_in_vector(const std::vector<T> vec, const T in)
+    std::optional<int> index_in_vector(const std::vector<T> vec, const T in)
 	{
         auto it = std::ranges::find(vec, in);
         if (it != vec.end()) {

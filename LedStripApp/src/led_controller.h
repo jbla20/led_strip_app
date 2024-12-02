@@ -48,6 +48,7 @@ private:
 
 public:
 	std::string m_name;
+	std::string m_alias;
 	App* m_app;
 
 private:

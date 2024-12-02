@@ -30,14 +30,17 @@ private:
 	// Updating
 	bool create_new_controller(std::string name);
 	bool update_controller(int index);
-	bool delete_controller(int index);
+	bool delete_selected_controller();
+	bool rename_selected_controller(std::string new_name);
 	bool create_new_config(std::string name);
 	bool update_controller_config(int index);
-	bool delete_config(int index);
+	bool delete_selected_config();
+	bool rename_selected_config(std::string new_name);
 
 	// Getters
 	LEDController* led_controller();
 	std::vector<std::string> led_controller_names();
+	std::vector<std::string> led_controller_aliases();
 	std::vector<std::string> led_config_names();
 
 private:
