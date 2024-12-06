@@ -16,12 +16,15 @@ public:
 
 private:
     // Data used across windows in this tab
-    int m_selected_config = 0;
-    char m_new_config_name[100] = "\0";
-    char m_rename_config_name[100] = "\0";
-
     int m_selected_controller = 0;
     char m_new_controller_name[100] = "\0";
     char m_rename_controller_name[100] = "\0";
 
+    int m_selected_led_config = 0;
+    char m_new_led_config_name[100] = "\0";
+    char m_rename_led_config_name[100] = "\0";
+
+    int m_selected_timer_config = 0;
+    char m_new_timer_config_name[100] = "\0";
+    char m_rename_timer_config_name[100] = "\0";
 };

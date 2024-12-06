@@ -30,19 +30,19 @@ void LightTab::render()
         ImGui::DockBuilderSetNodeSize(dockspace_id, ImGui::GetMainViewport()->Size);
 
         ImGuiID dock_id_left = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.3f, nullptr, &dockspace_id);
-        ImGuiID dock_id_right = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.4f, nullptr, &dockspace_id);
+        ImGuiID dock_id_right = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.5714f, nullptr, &dockspace_id);
         ImGuiID dock_id_center = dockspace_id;  // The remaining space in the center
 
         ImGui::DockBuilderDockWindow("Bluetooth Connect", dock_id_left);
-        ImGui::DockBuilderDockWindow("Light Configs", dock_id_center);
-        ImGui::DockBuilderDockWindow("Light Settings", dock_id_right);
+        ImGui::DockBuilderDockWindow("Light Settings", dock_id_center);
+        ImGui::DockBuilderDockWindow("Timers", dock_id_right);
 
         ImGui::DockBuilderFinish(dockspace_id);
     }
 
     // Creating ui for different dock windows
     if (ImGui::Begin("Bluetooth Connect")) {
-        // Connect
+        // Connect controller
         ImGui::Text(m_app->led_controller()->connection_status_str().c_str());
         if (!m_app->led_controller()->is_scanning())
         {
@@ -55,7 +55,7 @@ void LightTab::render()
             }
         }
 
-        // List all known devices
+        // Known devices
         std::vector<const char*> controller_items;
         controller_items.reserve(controller_items.size());
         std::vector<std::string> controller_names = m_app->led_controller_aliases();
@@ -63,13 +63,13 @@ void LightTab::render()
         {
             controller_items.push_back(item.c_str());
         }
-        ImGui::Text("Known Devices");
+        ImGui::Text("Known devices");
         if (ImGui::ListBox(" ", &m_selected_controller, controller_items.data(), controller_items.size(), 10))
         {
             m_app->update_controller(m_selected_controller + 1);
         }
 
-        // Create new known device
+        // Create device
         ImGui::Text("New device");
         ImGui::InputText("##New device", m_new_controller_name, sizeof(m_new_controller_name), ImGuiInputTextFlags_CharsNoBlank);
         ImGui::SameLine();
@@ -81,12 +81,13 @@ void LightTab::render()
                 if (m_app->create_new_controller(std::string(m_new_controller_name)))
                 {
                     std::cout << "Created new controller." << std::endl;
-                    m_app->update_controller(m_app->m_led_controllers.size() - 1);
-                    m_selected_controller = m_app->m_led_controllers.size() - 1;
+                    m_app->update_controller(static_cast<int>(m_app->m_led_controllers.size()) - 1);
+                    m_selected_controller = static_cast<int>(m_app->m_led_controllers.size()) - 1;
                 }
             }
         }
 
+        // Rename device
         ImGui::Text("Rename device");
         ImGui::InputText("##Rename device", m_rename_controller_name, sizeof(m_rename_controller_name), ImGuiInputTextFlags_CharsNoBlank);
         ImGui::SameLine();
@@ -99,6 +100,7 @@ void LightTab::render()
             }
         }
 
+        // Delete and reset device
         if (ImGui::Button("Delete"))
         {
             m_app->delete_selected_controller();
@@ -112,63 +114,67 @@ void LightTab::render()
     }
     ImGui::End(); // Bluetooth Connect
 
-    if (ImGui::Begin("Light Configs"))
+    if (ImGui::Begin("Light Settings"))
     {
-        std::vector<const char*> config_items;
-        config_items.reserve(config_items.size());
-        std::vector<std::string> config_names = m_app->led_config_names();
-        for (const auto& item : config_names)
+        // Available configs
+        std::vector<const char*> led_config_items;
+        led_config_items.reserve(led_config_items.size());
+        std::vector<std::string> led_config_names = m_app->led_config_names();
+        for (const auto& item : led_config_names)
         {
-            config_items.push_back(item.c_str());
+            led_config_items.push_back(item.c_str());
         }
-        ImGui::Text("Available configs");
-        if (ImGui::ListBox(" ", &m_selected_config, config_items.data(), config_items.size(), 10))
+        ImGui::Text("Available led configs");
+        if (ImGui::ListBox(" ", &m_selected_led_config, led_config_items.data(), led_config_items.size(), 10))
         {
-            m_app->update_controller_config(m_selected_config + 1);
+            m_app->update_controller_led_config(m_selected_led_config + 1);
         }
 
-        ImGui::Text("New config");
-        ImGui::InputText("##New config", m_new_config_name, sizeof(m_new_config_name), ImGuiInputTextFlags_CharsNoBlank);
+        // New config
+        ImGui::Text("New led config");
+        ImGui::InputText("##New led config", m_new_led_config_name, sizeof(m_new_led_config_name), ImGuiInputTextFlags_CharsNoBlank);
         ImGui::SameLine();
         if (ImGui::Button("Create"))
         {
-            if (m_new_config_name[0] != '\0' && !helpers::exists_in_vector(m_app->led_config_names(), std::string(m_new_config_name)))
+            if (m_new_led_config_name[0] != '\0' && !helpers::exists_in_vector(m_app->led_config_names(), std::string(m_new_led_config_name)))
             {
-                if (m_app->create_new_config(std::string(m_new_config_name)))
+                if (m_app->create_new_led_config(std::string(m_new_led_config_name)))
                 {
-                    std::cout << "Created new config." << std::endl;
-                    m_app->update_controller_config(m_app->m_led_configs.size() - 1);
-                    m_selected_config = m_app->m_led_configs.size() - 1;
+                    std::cout << "Created new led config." << std::endl;
+                    m_app->update_controller_led_config(static_cast<int>(m_app->m_led_configs.size()) - 1);
+                    m_selected_led_config = static_cast<int>(m_app->m_led_configs.size()) - 1;
                 }
             }
         }
 
-        ImGui::Text("Rename config");
-        ImGui::InputText("##Rename config", m_rename_config_name, sizeof(m_rename_config_name), ImGuiInputTextFlags_CharsNoBlank);
+        // Rename config
+        ImGui::Text("Rename led config");
+        ImGui::InputText("##Rename led config", m_rename_led_config_name, sizeof(m_rename_led_config_name), ImGuiInputTextFlags_CharsNoBlank);
         ImGui::SameLine();
         if (ImGui::Button("Save"))
         {
-            if (m_rename_config_name[0] != '\0' && !helpers::exists_in_vector(m_app->led_config_names(), std::string(m_rename_config_name)))
+            if (m_rename_led_config_name[0] != '\0' && !helpers::exists_in_vector(m_app->led_config_names(), std::string(m_rename_led_config_name)))
             {
-                m_app->rename_selected_config(std::string(m_rename_config_name));
+                m_app->rename_selected_led_config(std::string(m_rename_led_config_name));
             }
         }
 
+        // Delete config
         if (ImGui::Button("Delete"))
         {
-            m_app->delete_selected_config();
+            m_app->delete_selected_led_config();
         }
-    }
-    ImGui::End(); // Light Configs
 
-    if (ImGui::Begin("Light Settings"))
-    {
-        ImGui::Text("Device Status");
+        ImGui::NewLine();
+        ImGui::Separator();
+
+        // Light settings
+        ImGui::Text("Device status");
         if (ImGui::Button(m_app->led_controller()->is_device_on() ? "On" : "Off"))
         {
             m_app->led_controller()->toggle_device();
         }
-        ImGui::Text("Color Selection");
+        ImGui::Text("Color selection");
         if (ImGui::ColorEdit3("Color", m_app->led_controller()->led_config()->color.data()))
         {
             m_app->led_controller()->update_rgb();
@@ -177,8 +183,7 @@ void LightTab::render()
         {
             m_app->led_controller()->update_rgb();
         }
-
-        ImGui::Text("Mode Selection");
+        ImGui::Text("Mode selection");
         if (ImGui::Combo("Mode", &m_app->led_controller()->led_config()->mode.index, m_app->led_controller()->led_config()->mode.mode_strings, IM_ARRAYSIZE(m_app->led_controller()->led_config()->mode.mode_strings)))
         {
             m_app->led_controller()->update_mode();
@@ -189,4 +194,107 @@ void LightTab::render()
         }
     }
     ImGui::End(); // Light Settings
+
+    if (ImGui::Begin("Timers"))
+    {
+        // Available configs
+        std::vector<const char*> timer_config_items;
+        timer_config_items.reserve(timer_config_items.size());
+        std::vector<std::string> timer_config_names = m_app->timer_config_names();
+        for (const auto& item : timer_config_names)
+        {
+            timer_config_items.push_back(item.c_str());
+        }
+        ImGui::Text("Available timer configs");
+        if (ImGui::ListBox(" ", &m_selected_timer_config, timer_config_items.data(), timer_config_items.size(), 10))
+        {
+            m_app->update_controller_timer_config(m_selected_timer_config + 1);
+        }
+
+        // New config
+        ImGui::Text("New timer config");
+        ImGui::InputText("##New timer config", m_new_timer_config_name, sizeof(m_new_timer_config_name), ImGuiInputTextFlags_CharsNoBlank);
+        ImGui::SameLine();
+        if (ImGui::Button("Create"))
+        {
+            if (m_new_timer_config_name[0] != '\0' && !helpers::exists_in_vector(m_app->timer_config_names(), std::string(m_new_timer_config_name)))
+            {
+                if (m_app->create_new_timer_config(std::string(m_new_timer_config_name)))
+                {
+                    std::cout << "Created new timer config." << std::endl;
+                    m_app->update_controller_timer_config(static_cast<int>(m_app->m_timer_configs.size()) - 1);
+                    m_selected_timer_config = static_cast<int>(m_app->m_timer_configs.size()) - 1;
+                }
+            }
+        }
+
+        // Rename config
+        ImGui::Text("Rename timer config");
+        ImGui::InputText("##Rename timer config", m_rename_timer_config_name, sizeof(m_rename_timer_config_name), ImGuiInputTextFlags_CharsNoBlank);
+        ImGui::SameLine();
+        if (ImGui::Button("Save"))
+        {
+            if (m_rename_timer_config_name[0] != '\0' && !helpers::exists_in_vector(m_app->timer_config_names(), std::string(m_rename_timer_config_name)))
+            {
+                m_app->rename_selected_timer_config(std::string(m_rename_timer_config_name));
+            }
+        }
+
+        // Delete config
+        if (ImGui::Button("Delete"))
+        {
+            m_app->delete_selected_timer_config();
+        }
+
+        ImGui::NewLine();
+        ImGui::Separator();
+
+        ImGui::Text("Timer selection");
+        ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.25f);
+        if (ImGui::InputFloat("Delay", &m_app->led_controller()->timer_config()->delay))
+        {
+            if (m_app->led_controller()->timer_config()->delay < 0)
+            {
+                std::cout << "Delay must be non-negative" << std::endl;
+                m_app->led_controller()->timer_config()->delay = 0.0f;
+            }
+        }
+        ImGui::SameLine();
+        if (ImGui::InputFloat("Duration", &m_app->led_controller()->timer_config()->duration))
+        {
+            if (m_app->led_controller()->timer_config()->duration <= 0)
+            {
+                std::cout << "Duration must be positive" << std::endl;
+                m_app->led_controller()->timer_config()->duration = 1.0f;
+            }
+        }
+        ImGui::PopItemWidth();
+        if (ImGui::InputInt("Repeat number", &m_app->led_controller()->timer_config()->repeat))
+        {
+            if (m_app->led_controller()->timer_config()->repeat < 0)
+            {
+                std::cout << "Repeat number must be non-negative" << std::endl;
+                m_app->led_controller()->timer_config()->repeat = 0;
+            }
+        }
+        
+        ImGui::NewLine();
+        ImGui::Separator();
+
+
+        ImGui::Text("Global timer");
+        m_app->m_timer.update();
+        ImGui::SameLine();
+        if (ImGui::Button(!m_app->m_timer.is_active() ? "Start" : (!m_app->m_timer.is_paused() ? "Pause" : "Unpause")))
+        {
+            m_app->m_timer.pause(!m_app->m_timer.is_paused());
+        }
+
+        ImGui::SameLine();
+        if (ImGui::Button("Reset"))
+        {
+            m_app->m_timer.reset();
+        }
+    }
+    ImGui::End(); // Timers
 }

@@ -168,6 +168,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\light_tab.cpp" />
+    <ClCompile Include="src\timer.cpp" />
     <ClCompile Include="src\window.cpp" />
     <ClCompile Include="src\app.cpp" />
     <ClCompile Include="src\imgui\imgui.cpp" />
@@ -199,6 +200,8 @@
     <ClInclude Include="src\simpleble\SimpleBLE.h" />
     <ClInclude Include="src\simpleble\Types.h" />
     <ClInclude Include="src\simpleble\Utils.h" />
+    <ClInclude Include="src\timer.h" />
+    <ClInclude Include="src\timer_configuration.h" />
     <ClInclude Include="src\window.h" />
     <ClInclude Include="src\app.h" />
     <ClInclude Include="src\imgui\imconfig.h" />

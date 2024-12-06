@@ -12,14 +12,17 @@
 
 #pragma comment(lib, "shell32.lib")
 
-App::App() : m_window(L"LED Strip Controller") 
+App::App() : m_window(L"LED Strip Controller"), m_timer(this)
 {
     std::string name = "Default";
     m_led_controllers.emplace_back(std::make_unique<LEDController>(this, name));
     m_selected_controller = 0;
 
     m_led_configs.emplace_back(std::make_unique<LEDConfiguration>(name, false, std::array<float, 3>{1.0f, 1.0f, 1.0f}, 1.0f, Mode(0, 0.0f)));
-    m_selected_controller_configs = { { name, 0 } };
+    m_selected_led_configs = { { name, 0 } };
+
+    m_timer_configs.emplace_back(std::make_unique<TimerConfiguration>(name, false, 0.0f, 1.0f, 1));
+    m_selected_timer_configs = { { name, 0 } };
 }
 
 App::~App() {
@@ -207,10 +210,39 @@ void App::load_settings()
 
         YAML::Node settings = YAML::Load(file);  // Load YAML from file
 
-        // Load LED configurations
-        if (settings["configurations"])
+        // Load LED controllers
+        if (settings["controllers"])
         {
-            m_led_configs.resize(1 + settings["configurations"].size());
+            m_led_controllers.resize(1 + settings["controllers"].size());
+            for (size_t i = 1; i < m_led_controllers.size(); i++)
+            {
+                // Predefine parameters needed to load LED controller
+                std::string name = "\0";
+                int selected_led_config = 0;
+                int selected_timer_config = 0;
+
+                // Load values
+                const YAML::Node& controller_yaml = settings["controllers"][i];
+                if (controller_yaml["name"])
+                    name = controller_yaml["name"].as<std::string>();
+
+                if (controller_yaml["selected_led_config"])
+                    selected_led_config = controller_yaml["selected_led_config"].as<int>();
+
+                if (controller_yaml["selected_timer_config"])
+                    selected_timer_config = controller_yaml["selected_timer_config"].as<int>();
+
+                // Create controller
+                m_led_controllers[i] = std::make_unique<LEDController>(this, name);
+                m_selected_led_configs[name] = selected_led_config;
+                m_selected_timer_configs[name] = selected_timer_config;
+            }
+        }
+
+        // Load LED configurations
+        if (settings["led_configs"])
+        {
+            m_led_configs.resize(1 + settings["led_configs"].size());
             for (size_t i = 1; i < m_led_configs.size(); i++)
             {
                 // Predefine parameters needed to load LED configuration
@@ -221,16 +253,16 @@ void App::load_settings()
                 Mode mode = { 0, 0.0f };
 
                 // Load values
-                const YAML::Node& config_yaml = settings["configurations"][i];
-                if (config_yaml["name"])
-                    name = config_yaml["name"].as<std::string>();
+                const YAML::Node& led_config_yaml = settings["led_configs"][i];
+                if (led_config_yaml["name"])
+                    name = led_config_yaml["name"].as<std::string>();
 
-                if (config_yaml["device_on"])
-                    device_on = config_yaml["device_on"].as<bool>();
+                if (led_config_yaml["device_on"])
+                    device_on = led_config_yaml["device_on"].as<bool>();
 
-                if (config_yaml["color"])
+                if (led_config_yaml["color"])
                 {
-                    const YAML::Node& color_yaml = config_yaml["color"];
+                    const YAML::Node& color_yaml = led_config_yaml["color"];
                     if (color_yaml.size() == 3)
                     {
                         color[0] = color_yaml[0].as<float>();
@@ -239,48 +271,59 @@ void App::load_settings()
                     }
                 }
 
-                if (config_yaml["brightness"])
-                    brightness = config_yaml["brightness"].as<float>();
+                if (led_config_yaml["brightness"])
+                    brightness = led_config_yaml["brightness"].as<float>();
 
-                if (config_yaml["mode"])
+                if (led_config_yaml["mode"])
                 {
-                    const YAML::Node& mode_yaml = config_yaml["mode"];
+                    const YAML::Node& mode_yaml = led_config_yaml["mode"];
                     if (mode_yaml["index"])
                         mode.index = mode_yaml["index"].as<int>();
                     if (mode_yaml["speed"])
                         mode.speed = mode_yaml["speed"].as<float>();
                 }
 
-                // Load configuration
+                // Load led configuration
                 m_led_configs[i] = std::make_unique<LEDConfiguration>(name, device_on, color, brightness, mode);
             }
         }
 
-        // Load LED controllers
-        if (settings["controllers"])
+        if (settings["timer_configs"])
         {
-            m_led_controllers.resize(1 + settings["controllers"].size());
-            for (size_t i = 1; i < m_led_controllers.size(); i++)
+            m_timer_configs.resize(1 + settings["timer_configs"].size());
+            for (size_t i = 1; i < m_timer_configs.size(); i++)
             {
-                // Predefine parameters needed to load LED controller
+                // Predefine parameters needed to load timer configuration
                 std::string name = "\0";
-                int selected_config = 0;
+                bool enabled = false;
+                float delay = 0.0f;
+                float duration = 0.0f;
+                int repeat = 1;
 
                 // Load values
-                const YAML::Node& controller_yaml = settings["controllers"][i];
-                if (controller_yaml["name"])
-                    name = controller_yaml["name"].as<std::string>();
+                const YAML::Node& timer_config_yaml = settings["timer_configs"][i];
+                if (timer_config_yaml["name"])
+                    name = timer_config_yaml["name"].as<std::string>();
 
-                if (controller_yaml["selected_config"])
-                    selected_config = controller_yaml["selected_config"].as<int>();
+                if (timer_config_yaml["enabled"])
+                    enabled = timer_config_yaml["enabled"].as<bool>();
 
-                // Create controller
-                m_led_controllers[i] = std::make_unique<LEDController>(this, name);
-                m_selected_controller_configs[name] = selected_config;
+                if (timer_config_yaml["delay"])
+                    delay = timer_config_yaml["delay"].as<float>();
+
+                if (timer_config_yaml["duration"])
+                    duration = timer_config_yaml["duration"].as<float>();
+
+                if (timer_config_yaml["repeat"])
+                    repeat = timer_config_yaml["repeat"].as<int>();
+
+                // Load timer configuration
+                m_timer_configs[i] = std::make_unique<TimerConfiguration>(name, enabled, delay, duration, repeat);
             }
         }
 
         file.close();
+        std::cout << "Loaded settings" << std::endl;
     }
     catch (const YAML::Exception& ex)
     {
@@ -309,23 +352,34 @@ void App::save_settings()
     {
         // Create a YAML node and populate it with settings
         YAML::Node settings;
-        for (size_t i = 1; i < m_led_configs.size(); i++)
-        {
-            settings["configurations"][i]["name"] = m_led_configs[i]->name;
-            settings["configurations"][i]["device_on"] = m_led_configs[i]->device_on;
-            settings["configurations"][i]["color"] = YAML::Node(YAML::NodeType::Sequence); // List for color values
-            settings["configurations"][i]["color"].push_back(m_led_configs[i]->color[0]);
-            settings["configurations"][i]["color"].push_back(m_led_configs[i]->color[1]);
-            settings["configurations"][i]["color"].push_back(m_led_configs[i]->color[2]);
-            settings["configurations"][i]["brightness"] = m_led_configs[i]->brightness;
-            settings["configurations"][i]["mode"]["index"] = m_led_configs[i]->mode.index;
-            settings["configurations"][i]["mode"]["speed"] = m_led_configs[i]->mode.speed;
-        }
 
         for (size_t i = 1; i < m_led_controllers.size(); i++)
         {
             settings["controllers"][i]["name"] = m_led_controllers[i]->m_name;
-            settings["controllers"][i]["selected_config"] = m_selected_controller_configs[m_led_controllers[i]->m_name];
+            settings["controllers"][i]["selected_led_config"] = m_selected_led_configs[m_led_controllers[i]->m_name];
+            settings["controllers"][i]["selected_timer_config"] = m_selected_timer_configs[m_led_controllers[i]->m_name];
+        }
+
+        for (size_t i = 1; i < m_led_configs.size(); i++)
+        {
+            settings["led_configs"][i]["name"] = m_led_configs[i]->name;
+            settings["led_configs"][i]["device_on"] = m_led_configs[i]->device_on;
+            settings["led_configs"][i]["color"] = YAML::Node(YAML::NodeType::Sequence); // List for color values
+            settings["led_configs"][i]["color"].push_back(m_led_configs[i]->color[0]);
+            settings["led_configs"][i]["color"].push_back(m_led_configs[i]->color[1]);
+            settings["led_configs"][i]["color"].push_back(m_led_configs[i]->color[2]);
+            settings["led_configs"][i]["brightness"] = m_led_configs[i]->brightness;
+            settings["led_configs"][i]["mode"]["index"] = m_led_configs[i]->mode.index;
+            settings["led_configs"][i]["mode"]["speed"] = m_led_configs[i]->mode.speed;
+        }
+
+        for (size_t i = 1; i < m_timer_configs.size(); i++)
+        {
+            settings["timer_configs"][i]["name"] = m_timer_configs[i]->name;
+            settings["timer_configs"][i]["enabled"] = m_timer_configs[i]->enabled;
+            settings["timer_configs"][i]["delay"] = m_timer_configs[i]->delay;
+            settings["timer_configs"][i]["duration"] = m_timer_configs[i]->duration;
+            settings["timer_configs"][i]["repeat"] = m_timer_configs[i]->repeat;
         }
 
         // Save the YAML node to the file
@@ -335,6 +389,7 @@ void App::save_settings()
             return;
         }
         file << settings; // Write YAML to the file
+        std::cout << "Saved settings." << std::endl;
     }
     catch (const YAML::Exception& ex)
     {
@@ -346,7 +401,8 @@ void App::save_settings()
 bool App::create_new_controller(std::string name)
 {
     m_led_controllers.emplace_back(std::make_unique<LEDController>(this, name));
-    m_selected_controller_configs[name] = 0;
+    m_selected_led_configs[name] = 0;
+    m_selected_timer_configs[name] = 0;
     return true;
 }
 
@@ -390,7 +446,7 @@ bool App::delete_selected_controller()
         {
             m_led_controllers[*index]->toggle_device();
         }
-        m_selected_controller_configs.erase(m_led_controllers[*index]->m_name);
+        m_selected_led_configs.erase(m_led_controllers[*index]->m_name);
         m_led_controllers.erase(m_led_controllers.begin() + *index);
         m_selected_controller = 0;
     }
@@ -401,18 +457,18 @@ bool App::delete_selected_controller()
     }
 }
 
-bool App::create_new_config(std::string name)
+bool App::create_new_led_config(std::string name)
 {
     m_led_configs.emplace_back(std::make_unique<LEDConfiguration>(*led_controller()->led_config()));
     m_led_configs.back()->name = name;
     return true;
 }
 
-bool App::update_controller_config(int index)
+bool App::update_controller_led_config(int index)
 {
     try
     {
-        m_selected_controller_configs.at(led_controller()->m_name) = index;
+        m_selected_led_configs.at(led_controller()->m_name) = index;
         led_controller()->update_all();
     }
     catch (std::out_of_range& err)
@@ -422,13 +478,13 @@ bool App::update_controller_config(int index)
     }
 }
 
-bool App::rename_selected_config(std::string new_name)
+bool App::rename_selected_led_config(std::string new_name)
 {
     led_controller()->led_config()->name = new_name;
     return true;
 }
 
-bool App::delete_selected_config()
+bool App::delete_selected_led_config()
 {
     try
     {
@@ -436,20 +492,20 @@ bool App::delete_selected_config()
 
         if (!index)
         {
-            throw std::runtime_error("Config not found");
+            throw std::runtime_error("Led config not found");
         }
 
         *index += 1; // To account for default config
         m_led_configs.erase(m_led_configs.begin() + *index);
         for (size_t i = 0; i < m_led_controllers.size(); i++)
         {
-            if (m_selected_controller_configs[m_led_controllers[i]->m_name] == *index)
+            if (m_selected_led_configs[m_led_controllers[i]->m_name] == *index)
             {
-                m_selected_controller_configs[m_led_controllers[i]->m_name] = 0;
+                m_selected_led_configs[m_led_controllers[i]->m_name] = 0;
             }
-            else if (m_selected_controller_configs[m_led_controllers[i]->m_name] > *index)
+            else if (m_selected_led_configs[m_led_controllers[i]->m_name] > *index)
             {
-                m_selected_controller_configs[m_led_controllers[i]->m_name] -= 1;
+                m_selected_led_configs[m_led_controllers[i]->m_name] -= 1;
             }
 
         }
@@ -462,6 +518,67 @@ bool App::delete_selected_config()
         return false;
     }
 }
+
+bool App::create_new_timer_config(std::string name)
+{
+    m_timer_configs.emplace_back(std::make_unique<TimerConfiguration>(*led_controller()->timer_config()));
+    m_timer_configs.back()->name = name;
+    return true;
+}
+
+bool App::update_controller_timer_config(int index)
+{
+    try
+    {
+        m_selected_timer_configs.at(led_controller()->m_name) = index;
+    }
+    catch (std::out_of_range& err)
+    {
+        std::cout << err.what() << std::endl;
+        return false;
+    }
+}
+
+bool App::rename_selected_timer_config(std::string new_name)
+{
+    led_controller()->timer_config()->name = new_name;
+    return true;
+}
+
+bool App::delete_selected_timer_config()
+{
+    try
+    {
+        std::optional<int> index = helpers::index_in_vector(timer_config_names(), led_controller()->timer_config()->name);
+
+        if (!index)
+        {
+            throw std::runtime_error("Timer config not found");
+        }
+
+        *index += 1; // To account for default config
+        m_timer_configs.erase(m_timer_configs.begin() + *index);
+        for (size_t i = 0; i < m_led_controllers.size(); i++)
+        {
+            if (m_selected_timer_configs[m_led_controllers[i]->m_name] == *index)
+            {
+                m_selected_timer_configs[m_led_controllers[i]->m_name] = 0;
+            }
+            else if (m_selected_timer_configs[m_led_controllers[i]->m_name] > *index)
+            {
+                m_selected_timer_configs[m_led_controllers[i]->m_name] -= 1;
+            }
+
+        }
+        return true;
+    }
+    catch (std::runtime_error& err)
+    {
+        std::cout << err.what() << std::endl;
+        return false;
+    }
+}
+
 
 LEDController* App::led_controller()
 {
@@ -489,8 +606,8 @@ std::vector<std::string> App::led_controller_names()
 std::vector<std::string> App::led_controller_aliases()
 {
     std::vector<std::string> names;
-    std::ranges::transform(m_led_controllers, std::back_inserter(names), [](std::unique_ptr<LEDController>& controller)
-        { return controller->m_alias; }
+    std::ranges::transform(m_led_controllers, std::back_inserter(names), [](std::unique_ptr<LEDController>& led_controller)
+        { return led_controller->m_alias; }
     );
     names.erase(names.begin()); // TODO: Smarter way to ignore first element
     return names;
@@ -499,8 +616,18 @@ std::vector<std::string> App::led_controller_aliases()
 std::vector<std::string> App::led_config_names()
 {
     std::vector<std::string> names;
-    std::ranges::transform(m_led_configs, std::back_inserter(names), [](std::unique_ptr<LEDConfiguration>& controller) 
-        { return controller->name; }
+    std::ranges::transform(m_led_configs, std::back_inserter(names), [](std::unique_ptr<LEDConfiguration>& led_config) 
+        { return led_config->name; }
+    );
+    names.erase(names.begin()); // TODO: Smarter way to ignore first element
+    return names;
+}
+
+std::vector<std::string> App::timer_config_names()
+{
+    std::vector<std::string> names;
+    std::ranges::transform(m_timer_configs, std::back_inserter(names), [](std::unique_ptr<TimerConfiguration>& timer_config)
+        { return timer_config->name; }
     );
     names.erase(names.begin()); // TODO: Smarter way to ignore first element
     return names;

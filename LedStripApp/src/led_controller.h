@@ -8,6 +8,7 @@
 
 #include "simpleble/SimpleBLE.h"
 #include "led_configuration.h"
+#include "timer_configuration.h"
 
 enum BLESTATUS {
 	UNDEFINED,
@@ -37,12 +38,12 @@ public:
 	bool is_connected();
 	inline bool is_scanning() const { return m_is_scanning; }
 	inline bool is_device_on() { return led_config()->device_on; }
-	inline void set_device_on_flag(bool value) { led_config()->device_on = value; }
 
 	LEDConfiguration* led_config();
+	TimerConfiguration* timer_config();
 
 private:
-	void set_device_on(bool is_on);
+	void set_device_on(bool on);
 	void scan_and_connect_internal();
 	void write_command(SimpleBLE::ByteArray& command);
 

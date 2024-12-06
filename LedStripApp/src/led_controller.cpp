@@ -24,20 +24,6 @@ LEDController::~LEDController()
     }
 }
 
-LEDConfiguration* LEDController::led_config()
-{
-    try
-    {
-        int index = m_app->m_selected_controller_configs.at(m_name);
-        return m_app->m_led_configs.at(index).get();
-    }
-    catch (const std::out_of_range& e)
-    {
-        std::cout << "Couldn't find led config for controller " << m_name << ": " << e.what() << std::endl;
-        return nullptr;
-    }
-}
-
 void LEDController::scan_and_connect()
 {
     if (m_is_scanning || is_connected())
@@ -125,9 +111,9 @@ void LEDController::update_all()
     update_mode();
 }
 
-void LEDController::set_device_on(bool is_on)
+void LEDController::set_device_on(bool on)
 {
-    SimpleBLE::ByteArray command = is_on ? TURN_ON_COMMAND : TURN_OFF_COMMAND;
+    SimpleBLE::ByteArray command = on ? TURN_ON_COMMAND : TURN_OFF_COMMAND;
     write_command(command);
 }
 
@@ -142,7 +128,7 @@ void LEDController::update_rgb()
 void LEDController::update_mode()
 {
     using Range = std::pair<float, float>;
-    auto interp1d = [](Range range_in, Range range_out, float input) {
+    auto interp1d = [](Range range_in, Range range_out, float input) -> float {
         input = std::clamp(input, range_in.first, range_in.second);
         return range_out.first + (input - range_in.first) * (range_out.second - range_out.first) / (range_in.second - range_in.first);
     };
@@ -204,3 +190,32 @@ void LEDController::scan_and_connect_internal()
     }
     m_is_scanning = false;
 }
+
+LEDConfiguration* LEDController::led_config()
+{
+    try
+    {
+        int index = m_app->m_selected_led_configs.at(m_name);
+        return m_app->m_led_configs.at(index).get();
+    }
+    catch (const std::out_of_range& e)
+    {
+        std::cout << "Couldn't find led config for controller " << m_name << ": " << e.what() << std::endl;
+        return nullptr;
+    }
+}
+
+TimerConfiguration* LEDController::timer_config()
+{
+    try
+    {
+        int index = m_app->m_selected_timer_configs.at(m_name);
+        return m_app->m_timer_configs.at(index).get();
+    }
+    catch (const std::out_of_range& e)
+    {
+        std::cout << "Couldn't find timer config for controller " << m_name << ": " << e.what() << std::endl;
+        return nullptr;
+    }
+}
+
