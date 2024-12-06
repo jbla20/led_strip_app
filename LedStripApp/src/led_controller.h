@@ -25,7 +25,7 @@ class App;
 class LEDController
 {
 public:
-	explicit LEDController(App* app, std::string name);
+	explicit LEDController(App* app, std::string name, bool timer_enabled);
 	~LEDController();
 	
 	void scan_and_connect();
@@ -50,6 +50,7 @@ private:
 public:
 	std::string m_name;
 	std::string m_alias;
+	bool m_timer_enabled;
 	App* m_app;
 
 private:

@@ -18,15 +18,14 @@ bool Timer::update()
 
     auto in_active_range = [this](const TimerConfiguration* timer_config) -> bool
     {
-        const float cycle_duration = timer_config->delay + timer_config->duration;
+        const float cycle_duration = timer_config->end;
         
-        return (std::fmod(m_delta_time_s, cycle_duration) > timer_config->delay) &&
-               (std::fmod(m_delta_time_s, cycle_duration) < timer_config->delay + timer_config->duration);
+        return (std::fmod(m_delta_time_s, cycle_duration) > timer_config->start) &&
+               (std::fmod(m_delta_time_s, cycle_duration) < timer_config->end);
     };
     for (size_t i = 0; i < m_app->m_led_controllers.size(); i++)
     {
         LEDController* controller = m_app->m_led_controllers[i].get();
-        TimerConfiguration* timer_config = controller->timer_config();
 
         if (controller->timer_config()->is_done())
         {
@@ -36,11 +35,18 @@ bool Timer::update()
 
         if (in_active_range(controller->timer_config()))
         {
-            if (!controller->is_device_on()) m_app->m_led_controllers[i]->toggle_device();
+
+            if (!controller->is_device_on() != controller->timer_config()->inverse)
+            {
+                m_app->m_led_controllers[i]->toggle_device();
+            }
         }
         else
         {
-            if (controller->is_device_on()) m_app->m_led_controllers[i]->toggle_device();
+            if (controller->is_device_on() != controller->timer_config()->inverse)
+            {
+                m_app->m_led_controllers[i]->toggle_device();
+            }
         }
     }
 

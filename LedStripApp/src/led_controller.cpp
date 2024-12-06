@@ -4,7 +4,8 @@
 #include <iostream>
 #include <algorithm>
 
-LEDController::LEDController(App* app, std::string name) : m_app(app), m_name(name), m_alias(m_name)
+LEDController::LEDController(App* app, std::string name, bool timer_enabled) 
+    : m_app(app), m_name(name), m_alias(m_name), m_timer_enabled(timer_enabled)
 {
     m_connection_status = BLESTATUS::UNDEFINED;
     m_is_scanning = false;

@@ -17,6 +17,7 @@ public:
 	void pause(bool val);
 	void reset();
 
+	inline float get_relative_time() { return m_delta_time_s; }
 	inline bool is_paused() { return m_paused; }
 	inline bool is_active() { return m_delta_time_s > 0.001f; }
 

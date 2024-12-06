@@ -6,23 +6,23 @@
 class TimerConfiguration
 {
 public:
-    explicit TimerConfiguration(std::string name, bool enabled, float delay, float duration, int repeat)
-        : name(name), enabled(enabled), delay(delay), duration(duration), repeat(repeat) {}
+    explicit TimerConfiguration(std::string name, float start, float end, int repeat, bool inverse)
+        : name(name), start(start), end(end), repeat(repeat), inverse(inverse) {}
 	~TimerConfiguration() = default;
 
     inline float get_progress_percentage() { return progress / static_cast<float>(repeat); }
-    inline bool is_done() { return progress > static_cast<float>(repeat); }
+    inline bool is_done() { return progress > static_cast<float>(repeat) || start >= end; }
 
 protected:
     inline void update_progress(float time)
     { 
         try
         {
-            if (duration == 0)
+            if (end == 0)
             {
-                throw std::runtime_error("Duration must be greater than zero");
+                throw std::runtime_error("End time must be greater than zero");
             }
-            progress = time / (delay + duration); 
+            progress = time / end; 
         }
         catch (const std::runtime_error& e)
         {
@@ -32,10 +32,10 @@ protected:
 
 public:
     std::string name;
-    bool enabled;
-    float delay;
-    float duration;
+    float start;
+    float end;
     int repeat;
+    bool inverse;
 
 protected:
     float progress = 0.0f; // Range: 0-repeat

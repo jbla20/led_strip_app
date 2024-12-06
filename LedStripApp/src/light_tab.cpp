@@ -197,103 +197,109 @@ void LightTab::render()
 
     if (ImGui::Begin("Timers"))
     {
-        // Available configs
-        std::vector<const char*> timer_config_items;
-        timer_config_items.reserve(timer_config_items.size());
-        std::vector<std::string> timer_config_names = m_app->timer_config_names();
-        for (const auto& item : timer_config_names)
+        ImGui::Checkbox("Timer enabled", &m_app->led_controller()->m_timer_enabled);
+        if (m_app->led_controller()->m_timer_enabled)
         {
-            timer_config_items.push_back(item.c_str());
-        }
-        ImGui::Text("Available timer configs");
-        if (ImGui::ListBox(" ", &m_selected_timer_config, timer_config_items.data(), timer_config_items.size(), 10))
-        {
-            m_app->update_controller_timer_config(m_selected_timer_config + 1);
-        }
-
-        // New config
-        ImGui::Text("New timer config");
-        ImGui::InputText("##New timer config", m_new_timer_config_name, sizeof(m_new_timer_config_name), ImGuiInputTextFlags_CharsNoBlank);
-        ImGui::SameLine();
-        if (ImGui::Button("Create"))
-        {
-            if (m_new_timer_config_name[0] != '\0' && !helpers::exists_in_vector(m_app->timer_config_names(), std::string(m_new_timer_config_name)))
+            // Available configs
+            std::vector<const char*> timer_config_items;
+            timer_config_items.reserve(timer_config_items.size());
+            std::vector<std::string> timer_config_names = m_app->timer_config_names();
+            for (const auto& item : timer_config_names)
             {
-                if (m_app->create_new_timer_config(std::string(m_new_timer_config_name)))
+                timer_config_items.push_back(item.c_str());
+            }
+            ImGui::Text("Available timer configs");
+            if (ImGui::ListBox(" ", &m_selected_timer_config, timer_config_items.data(), timer_config_items.size(), 10))
+            {
+                m_app->update_controller_timer_config(m_selected_timer_config + 1);
+            }
+
+            // New config
+            ImGui::Text("New timer config");
+            ImGui::InputText("##New timer config", m_new_timer_config_name, sizeof(m_new_timer_config_name), ImGuiInputTextFlags_CharsNoBlank);
+            ImGui::SameLine();
+            if (ImGui::Button("Create"))
+            {
+                if (m_new_timer_config_name[0] != '\0' && !helpers::exists_in_vector(m_app->timer_config_names(), std::string(m_new_timer_config_name)))
                 {
-                    std::cout << "Created new timer config." << std::endl;
-                    m_app->update_controller_timer_config(static_cast<int>(m_app->m_timer_configs.size()) - 1);
-                    m_selected_timer_config = static_cast<int>(m_app->m_timer_configs.size()) - 1;
+                    if (m_app->create_new_timer_config(std::string(m_new_timer_config_name)))
+                    {
+                        std::cout << "Created new timer config." << std::endl;
+                        m_app->update_controller_timer_config(static_cast<int>(m_app->m_timer_configs.size()) - 1);
+                        m_selected_timer_config = static_cast<int>(m_app->m_timer_configs.size()) - 1;
+                    }
                 }
             }
-        }
 
-        // Rename config
-        ImGui::Text("Rename timer config");
-        ImGui::InputText("##Rename timer config", m_rename_timer_config_name, sizeof(m_rename_timer_config_name), ImGuiInputTextFlags_CharsNoBlank);
-        ImGui::SameLine();
-        if (ImGui::Button("Save"))
-        {
-            if (m_rename_timer_config_name[0] != '\0' && !helpers::exists_in_vector(m_app->timer_config_names(), std::string(m_rename_timer_config_name)))
+            // Rename config
+            ImGui::Text("Rename timer config");
+            ImGui::InputText("##Rename timer config", m_rename_timer_config_name, sizeof(m_rename_timer_config_name), ImGuiInputTextFlags_CharsNoBlank);
+            ImGui::SameLine();
+            if (ImGui::Button("Save"))
             {
-                m_app->rename_selected_timer_config(std::string(m_rename_timer_config_name));
+                if (m_rename_timer_config_name[0] != '\0' && !helpers::exists_in_vector(m_app->timer_config_names(), std::string(m_rename_timer_config_name)))
+                {
+                    m_app->rename_selected_timer_config(std::string(m_rename_timer_config_name));
+                }
             }
-        }
 
-        // Delete config
-        if (ImGui::Button("Delete"))
-        {
-            m_app->delete_selected_timer_config();
-        }
-
-        ImGui::NewLine();
-        ImGui::Separator();
-
-        ImGui::Text("Timer selection");
-        ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.25f);
-        if (ImGui::InputFloat("Delay", &m_app->led_controller()->timer_config()->delay))
-        {
-            if (m_app->led_controller()->timer_config()->delay < 0)
+            // Delete config
+            if (ImGui::Button("Delete"))
             {
-                std::cout << "Delay must be non-negative" << std::endl;
-                m_app->led_controller()->timer_config()->delay = 0.0f;
+                m_app->delete_selected_timer_config();
             }
-        }
-        ImGui::SameLine();
-        if (ImGui::InputFloat("Duration", &m_app->led_controller()->timer_config()->duration))
-        {
-            if (m_app->led_controller()->timer_config()->duration <= 0)
+
+            ImGui::NewLine();
+            ImGui::Separator();
+
+            // Timer settings
+            ImGui::Text("Timer selection");
+            ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.25f);
+            if (ImGui::InputFloat("Start time", &m_app->led_controller()->timer_config()->start))
             {
-                std::cout << "Duration must be positive" << std::endl;
-                m_app->led_controller()->timer_config()->duration = 1.0f;
+                if (m_app->led_controller()->timer_config()->start < 0)
+                {
+                    std::cout << "Start time must be non-negative" << std::endl;
+                    m_app->led_controller()->timer_config()->start = 0.0f;
+                }
             }
-        }
-        ImGui::PopItemWidth();
-        if (ImGui::InputInt("Repeat number", &m_app->led_controller()->timer_config()->repeat))
-        {
-            if (m_app->led_controller()->timer_config()->repeat < 0)
+            ImGui::SameLine();
+            if (ImGui::InputFloat("End time", &m_app->led_controller()->timer_config()->end))
             {
-                std::cout << "Repeat number must be non-negative" << std::endl;
-                m_app->led_controller()->timer_config()->repeat = 0;
+                if (m_app->led_controller()->timer_config()->end <= 0)
+                {
+                    std::cout << "End time must be positive" << std::endl;
+                    m_app->led_controller()->timer_config()->end = 1.0f;
+                }
             }
-        }
-        
-        ImGui::NewLine();
-        ImGui::Separator();
+            ImGui::PopItemWidth();
+            if (ImGui::InputInt("Repeat number", &m_app->led_controller()->timer_config()->repeat))
+            {
+                if (m_app->led_controller()->timer_config()->repeat < 1)
+                {
+                    std::cout << "Repeat number must be non-negative" << std::endl;
+                    m_app->led_controller()->timer_config()->repeat = 1;
+                }
+            }
+            ImGui::Checkbox("Inverse", &m_app->led_controller()->timer_config()->inverse);
 
+            ImGui::NewLine();
+            ImGui::Separator();
 
-        ImGui::Text("Global timer");
-        m_app->m_timer.update();
-        ImGui::SameLine();
-        if (ImGui::Button(!m_app->m_timer.is_active() ? "Start" : (!m_app->m_timer.is_paused() ? "Pause" : "Unpause")))
-        {
-            m_app->m_timer.pause(!m_app->m_timer.is_paused());
-        }
-
-        ImGui::SameLine();
-        if (ImGui::Button("Reset"))
-        {
-            m_app->m_timer.reset();
+            // Global timer
+            ImGui::Text("Global timer");
+            m_app->m_timer.update();
+            ImGui::SameLine();
+            if (ImGui::Button(!m_app->m_timer.is_active() ? "Start" : (!m_app->m_timer.is_paused() ? "Pause" : "Unpause")))
+            {
+                m_app->m_timer.pause(!m_app->m_timer.is_paused());
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Reset"))
+            {
+                m_app->m_timer.reset();
+            }
+            ImGui::Text("Relative time: %.3f seconds", m_app->m_timer.get_relative_time());
         }
     }
     ImGui::End(); // Timers
