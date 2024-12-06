@@ -35,7 +35,6 @@ bool Timer::update()
 
         if (in_active_range(controller->timer_config()))
         {
-
             if (!controller->is_device_on() != controller->timer_config()->inverse)
             {
                 m_app->m_led_controllers[i]->toggle_device();

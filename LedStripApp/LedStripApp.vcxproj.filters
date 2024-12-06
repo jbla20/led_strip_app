@@ -25,6 +25,12 @@
     <Filter Include="Header Files\yaml-cpp">
       <UniqueIdentifier>{ea564912-2541-4848-aac7-8800e25be105}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\implot">
+      <UniqueIdentifier>{b3d7a21f-955a-4e7c-bb09-9ebbd8c4a228}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\implot">
+      <UniqueIdentifier>{2497e8d2-a46f-41ba-8092-b89ef33f4139}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -65,6 +71,15 @@
     </ClCompile>
     <ClCompile Include="src\timer.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\implot\implot.cpp">
+      <Filter>Source Files\implot</Filter>
+    </ClCompile>
+    <ClCompile Include="src\implot\implot_demo.cpp">
+      <Filter>Source Files\implot</Filter>
+    </ClCompile>
+    <ClCompile Include="src\implot\implot_items.cpp">
+      <Filter>Source Files\implot</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -220,6 +235,12 @@
     </ClInclude>
     <ClInclude Include="src\timer.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\implot\implot.h">
+      <Filter>Header Files\implot</Filter>
+    </ClInclude>
+    <ClInclude Include="src\implot\implot_internal.h">
+      <Filter>Header Files\implot</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

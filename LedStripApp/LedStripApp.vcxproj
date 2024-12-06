@@ -132,7 +132,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;YAML_CPP_STATIC_DEFINE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)src\;$(ProjectDir)src\imgui\;$(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)src\;$(ProjectDir)src\imgui\;$(ProjectDir)src\implot\;$(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
@@ -167,6 +167,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\implot\implot.cpp" />
+    <ClCompile Include="src\implot\implot_demo.cpp" />
+    <ClCompile Include="src\implot\implot_items.cpp" />
     <ClCompile Include="src\light_tab.cpp" />
     <ClCompile Include="src\timer.cpp" />
     <ClCompile Include="src\window.cpp" />
@@ -184,6 +187,8 @@
   <ItemGroup>
     <ClInclude Include="resource.h" />
     <ClInclude Include="src\helpers.h" />
+    <ClInclude Include="src\implot\implot.h" />
+    <ClInclude Include="src\implot\implot_internal.h" />
     <ClInclude Include="src\led_configuration.h" />
     <ClInclude Include="src\app_tab.h" />
     <ClInclude Include="src\light_tab.h" />

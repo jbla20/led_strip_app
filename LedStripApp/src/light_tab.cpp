@@ -2,6 +2,7 @@
 #include <ranges>
 #include <algorithm>
 
+#define NOMINMAX
 #include "light_tab.h"
 #include "app.h"
 #include "helpers.h"
@@ -35,11 +36,12 @@ void LightTab::render()
 
         ImGui::DockBuilderDockWindow("Bluetooth Connect", dock_id_left);
         ImGui::DockBuilderDockWindow("Light Settings", dock_id_center);
+        ImGui::DockBuilderDockWindow("Live Timer View", dock_id_right);
         ImGui::DockBuilderDockWindow("Timers", dock_id_right);
 
         ImGui::DockBuilderFinish(dockspace_id);
     }
-
+    
     // Creating ui for different dock windows
     if (ImGui::Begin("Bluetooth Connect")) {
         // Connect controller
@@ -282,25 +284,62 @@ void LightTab::render()
                 }
             }
             ImGui::Checkbox("Inverse", &m_app->led_controller()->timer_config()->inverse);
-
-            ImGui::NewLine();
-            ImGui::Separator();
-
-            // Global timer
-            ImGui::Text("Global timer");
-            m_app->m_timer.update();
-            ImGui::SameLine();
-            if (ImGui::Button(!m_app->m_timer.is_active() ? "Start" : (!m_app->m_timer.is_paused() ? "Pause" : "Unpause")))
-            {
-                m_app->m_timer.pause(!m_app->m_timer.is_paused());
-            }
-            ImGui::SameLine();
-            if (ImGui::Button("Reset"))
-            {
-                m_app->m_timer.reset();
-            }
-            ImGui::Text("Relative time: %.3f seconds", m_app->m_timer.get_relative_time());
         }
     }
     ImGui::End(); // Timers
+
+    if (ImGui::Begin("Live Timer View"))
+    {
+        // Global timer
+        ImGui::Text("Global timer");
+        m_app->m_timer.update();
+        ImGui::SameLine();
+        if (ImGui::Button(!m_app->m_timer.is_active() ? "Start" : (!m_app->m_timer.is_paused() ? "Pause" : "Unpause")))
+        {
+            m_app->m_timer.pause(!m_app->m_timer.is_paused());
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Reset"))
+        {
+            m_app->m_timer.reset();
+        }
+        ImGui::Text("Relative time: %.3f seconds", m_app->m_timer.get_relative_time());
+
+
+        // Live timer view plot
+        const double x_max = std::ranges::max(
+            m_app->m_timer_configs | std::views::transform([](const std::unique_ptr<TimerConfiguration>& timer_config) 
+                { return timer_config->end; }
+            )
+        );
+        ImPlot::SetNextAxesLimits(0.0, x_max, 0, 1.1, ImGuiCond_Always);
+        double y_ticks[2] = { 0.0, 1.0 };
+
+        if (ImPlot::BeginPlot("Timer View", ImVec2(-1, 0), ImPlotFlags_NoLegend | ImPlotFlags_NoInputs | ImPlotFlags_Equal))
+        {
+            ImPlot::SetupAxisTicks(ImAxis_Y1, y_ticks, 2);
+
+            double x_timer[5];
+            double y_timer[5];
+            for (size_t i = 1; i < m_app->m_timer_configs.size(); i++)
+            {
+                x_timer[0] = 0;
+                x_timer[1] = m_app->m_timer_configs[i]->start;
+                x_timer[2] = m_app->m_timer_configs[i]->start;
+                x_timer[3] = m_app->m_timer_configs[i]->end;
+                x_timer[4] = m_app->m_timer_configs[i]->end;
+
+                y_timer[0] = static_cast<double>(m_app->m_timer_configs[i]->inverse);
+                y_timer[1] = static_cast<double>(m_app->m_timer_configs[i]->inverse);
+                y_timer[2] = static_cast<double>(!m_app->m_timer_configs[i]->inverse);
+                y_timer[3] = static_cast<double>(!m_app->m_timer_configs[i]->inverse);
+                y_timer[4] = static_cast<double>(m_app->m_timer_configs[i]->inverse);
+
+                ImPlot::PlotLine(m_app->m_timer_configs[i]->name.c_str(), x_timer, y_timer, 5);
+            }
+
+            ImPlot::EndPlot();
+        }
+    }
+    ImGui::End();
 }

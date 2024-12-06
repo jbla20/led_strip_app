@@ -33,6 +33,7 @@ App::~App() {
     ImGui_ImplDX12_Shutdown();
     ImGui_ImplWin32_Shutdown();
     ImGui::DestroyContext();
+    ImPlot::DestroyContext();
 }
 
 bool App::init()
@@ -50,6 +51,7 @@ void App::run()
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
+    ImPlot::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     io.IniFilename = NULL;  // To avoid storing position of windows => We control it with docking
