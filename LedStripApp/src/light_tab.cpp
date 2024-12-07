@@ -26,6 +26,7 @@ void LightTab::render()
     if (m_reset_tab)
     {
         m_reset_tab = false;
+        m_first_frame = true;
         ImGui::DockBuilderRemoveNode(dockspace_id);
         ImGui::DockBuilderAddNode(dockspace_id);
         ImGui::DockBuilderSetNodeSize(dockspace_id, ImGui::GetMainViewport()->Size);
@@ -40,6 +41,11 @@ void LightTab::render()
         ImGui::DockBuilderDockWindow("Timers", dock_id_right);
 
         ImGui::DockBuilderFinish(dockspace_id);
+    }
+    else if (m_first_frame)
+    {
+        ImGui::SetWindowFocus("Timers");
+        m_first_frame = false;
     }
     
     // Creating ui for different dock windows
@@ -309,34 +315,56 @@ void LightTab::render()
         // Live timer view plot
         const double x_max = std::ranges::max(
             m_app->m_timer_configs | std::views::transform([](const std::unique_ptr<TimerConfiguration>& timer_config) 
-                { return timer_config->end; }
+                { return timer_config->end * timer_config->repeat; }
             )
         );
-        ImPlot::SetNextAxesLimits(0.0, x_max, 0, 1.1, ImGuiCond_Always);
+        const double y_min = -0.1; const double y_max = 1.2;
+        ImPlot::SetNextAxesLimits(0.0, x_max, y_min, y_max, ImGuiCond_Always);
         double y_ticks[2] = { 0.0, 1.0 };
 
-        if (ImPlot::BeginPlot("Timer View", ImVec2(-1, 0), ImPlotFlags_NoLegend | ImPlotFlags_NoInputs | ImPlotFlags_Equal))
+        if (ImPlot::BeginPlot("Timer View", ImVec2(-1, 0), ImPlotFlags_NoInputs | ImPlotFlags_Equal))
         {
+            ImPlot::PushStyleVar(ImPlotStyleVar_LineWeight, 2.0f);
             ImPlot::SetupAxisTicks(ImAxis_Y1, y_ticks, 2);
 
-            double x_timer[5];
-            double y_timer[5];
+            // Plot timers
+            std::vector<double> x_timer;
+            std::vector<double> y_timer;
             for (size_t i = 1; i < m_app->m_timer_configs.size(); i++)
             {
+                const int num_elements = 2 + 4 * m_app->m_timer_configs[i]->repeat;
+                x_timer.resize(num_elements);
+                y_timer.resize(num_elements);
+
                 x_timer[0] = 0;
-                x_timer[1] = m_app->m_timer_configs[i]->start;
-                x_timer[2] = m_app->m_timer_configs[i]->start;
-                x_timer[3] = m_app->m_timer_configs[i]->end;
-                x_timer[4] = m_app->m_timer_configs[i]->end;
-
                 y_timer[0] = static_cast<double>(m_app->m_timer_configs[i]->inverse);
-                y_timer[1] = static_cast<double>(m_app->m_timer_configs[i]->inverse);
-                y_timer[2] = static_cast<double>(!m_app->m_timer_configs[i]->inverse);
-                y_timer[3] = static_cast<double>(!m_app->m_timer_configs[i]->inverse);
-                y_timer[4] = static_cast<double>(m_app->m_timer_configs[i]->inverse);
 
-                ImPlot::PlotLine(m_app->m_timer_configs[i]->name.c_str(), x_timer, y_timer, 5);
+                for (size_t j = 0; j < m_app->m_timer_configs[i]->repeat; j++)
+                {
+                    x_timer[1 + 4 * j] = m_app->m_timer_configs[i]->start + j * m_app->m_timer_configs[i]->end;
+                    x_timer[2 + 4 * j] = m_app->m_timer_configs[i]->start + j * m_app->m_timer_configs[i]->end;
+                    x_timer[3 + 4 * j] = m_app->m_timer_configs[i]->end + j * m_app->m_timer_configs[i]->end;
+                    x_timer[4 + 4 * j] = m_app->m_timer_configs[i]->end + j * m_app->m_timer_configs[i]->end;
+
+                    y_timer[1 + 4 * j] = static_cast<double>(m_app->m_timer_configs[i]->inverse);
+                    y_timer[2 + 4 * j] = static_cast<double>(!m_app->m_timer_configs[i]->inverse);
+                    y_timer[3 + 4 * j] = static_cast<double>(!m_app->m_timer_configs[i]->inverse);
+                    y_timer[4 + 4 * j] = static_cast<double>(m_app->m_timer_configs[i]->inverse);
+                }
+                
+                x_timer[num_elements - 1] = x_max;
+                y_timer[num_elements - 1] = 0.0;
+
+                ImPlot::PlotLine(m_app->m_timer_configs[i]->name.c_str(), x_timer.data(), y_timer.data(), num_elements);
             }
+            
+            // Plot vertical line that follows relative time
+            ImPlot::PushStyleColor(ImPlotCol_Line, IM_COL32(255, 255, 255, 255));
+            double x_vert[2] = { m_app->m_timer.get_relative_time(), m_app->m_timer.get_relative_time() };
+            double y_vert[2] = { y_min, y_max };
+            ImPlot::PlotLine("", x_vert, y_vert, 2);
+            ImPlot::PopStyleColor();
+            ImPlot::PopStyleVar();
 
             ImPlot::EndPlot();
         }

@@ -23,7 +23,7 @@ bool Timer::update()
         return (std::fmod(m_delta_time_s, cycle_duration) > timer_config->start) &&
                (std::fmod(m_delta_time_s, cycle_duration) < timer_config->end);
     };
-    for (size_t i = 0; i < m_app->m_led_controllers.size(); i++)
+    for (size_t i = 1; i < m_app->m_led_controllers.size(); i++)
     {
         LEDController* controller = m_app->m_led_controllers[i].get();
 

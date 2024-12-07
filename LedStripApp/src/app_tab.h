@@ -20,6 +20,7 @@ public:
     virtual void on_open() {}
     std::string name() { return m_name; }
     bool m_reset_tab = true;
+    bool m_first_frame = false; // Workaround for https://github.com/ocornut/imgui/issues/5005
 
 protected:
     App* m_app;
