@@ -6,7 +6,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     App app = App();
     if (!app.init())
     {
-        std::cout << "Failed to create the App" << std::endl;
+        std::cout << "Failed to create the app." << std::endl;
         return EXIT_FAILURE;
     }
 

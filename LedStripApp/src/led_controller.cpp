@@ -143,6 +143,7 @@ void LEDController::scan_and_connect_internal()
 {
     m_is_scanning = true;
     m_connection_status = BLESTATUS::SCANNING;
+    std::cout << "[Info] Scanning for device..." << std::endl;
 
     std::vector<SimpleBLE::Adapter> adapters = SimpleBLE::Adapter::get_adapters();
     SimpleBLE::Adapter adapter = adapters[0];
@@ -150,6 +151,7 @@ void LEDController::scan_and_connect_internal()
     {
         m_is_scanning = false;
         m_connection_status = BLESTATUS::BLT_NOT_ENABLED;
+        std::cout << "[Warning] Bluetooth is not enabled!" << std::endl;
         return;
     }
 
@@ -173,6 +175,7 @@ void LEDController::scan_and_connect_internal()
     if (!device_found)
     {
         m_connection_status = BLESTATUS::BLE_PERIPHERAL_NOT_FOUND;
+        std::cout << "[Error] Could not find the peripheral!" << std::endl;
     }
     else
     {
@@ -182,11 +185,13 @@ void LEDController::scan_and_connect_internal()
         if (is_connected())
         {
             m_connection_status = BLESTATUS::CONNECTED;
+            std::cout << "[Info] Connected to controller \'" << m_name << "\'." << std::endl;
             update_all();
         }
         else
         {
             m_connection_status = BLESTATUS::FAILED_TO_CONNECT;
+            std::cout << "[Error] Failed to connect to controller \'" << m_name << "\'." << std::endl;
         }
     }
     m_is_scanning = false;
@@ -201,7 +206,7 @@ LEDConfiguration* LEDController::led_config()
     }
     catch (const std::out_of_range& e)
     {
-        std::cout << "Couldn't find led config for controller " << m_name << ": " << e.what() << std::endl;
+        std::cout << "Failed to find led config for controller \'" << m_name << "\': " << e.what() << std::endl;
         return nullptr;
     }
 }
@@ -215,7 +220,7 @@ TimerConfiguration* LEDController::timer_config()
     }
     catch (const std::out_of_range& e)
     {
-        std::cout << "Couldn't find timer config for controller " << m_name << ": " << e.what() << std::endl;
+        std::cout << "Failed to find timer config for controller \'" << m_name << "\': " << e.what() << std::endl;
         return nullptr;
     }
 }

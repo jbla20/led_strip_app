@@ -20,13 +20,13 @@ protected:
         {
             if (end == 0)
             {
-                throw std::runtime_error("End time must be greater than zero");
+                throw std::runtime_error("End time must be greater than zero.");
             }
             progress = time / end; 
         }
         catch (const std::runtime_error& e)
         {
-            std::cout << "Error: " << e.what() << std::endl;
+            std::cout << "[Warning] Failed to update timer progress for \'" << name << "\': " << e.what() << std::endl;
         }
     }
 

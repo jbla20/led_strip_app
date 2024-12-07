@@ -329,12 +329,12 @@ void App::load_settings()
         }
 
         file.close();
-        std::cout << "Loaded settings" << std::endl;
+        std::cout << "[Info] Loaded settings." << std::endl;
     }
     catch (const YAML::Exception& ex)
     {
         // Handle YAML exceptions (e.g., file errors, parsing errors)
-        std::cerr << "Failed to load settings: " << ex.what() << "\n";
+        std::cout << "[Error] Failed to load settings: " << ex.what() << "\n";
     }
 }
 
@@ -396,12 +396,12 @@ void App::save_settings()
             return;
         }
         file << settings; // Write YAML to the file
-        std::cout << "Saved settings." << std::endl;
+        std::cout << "[Info] Saved settings." << std::endl;
     }
     catch (const YAML::Exception& ex)
     {
         // Handle YAML exceptions (e.g., serialization errors)
-        std::cerr << "Failed to save settings: " << ex.what() << "\n";
+        std::cout << "[Error] Failed to save settings: " << ex.what() << "\n";
     }
 }
 
@@ -419,14 +419,14 @@ bool App::update_controller(int index)
     {
         if (index < 0 || index >= m_led_controllers.size())
         {
-            throw std::out_of_range("Index " + std::to_string(index) + " is out of range");
+            throw std::out_of_range("Index " + std::to_string(index) + " is out of range.");
         }
 
         m_selected_controller = index;
     }
     catch (std::out_of_range& err)
     {
-        std::cout << err.what() << std::endl;
+        std::cout << "[Error] Failed to update controller: " << err.what() << std::endl;
         return false;
     }
 }
@@ -445,7 +445,7 @@ bool App::delete_selected_controller()
 
         if (!index)
         {
-            throw std::runtime_error("Controller not found");
+            throw std::runtime_error("Controller not found.");
         }
 
         *index += 1; // To account for default controller
@@ -459,7 +459,7 @@ bool App::delete_selected_controller()
     }
     catch (std::out_of_range& err)
     {
-        std::cout << err.what() << std::endl;
+        std::cout << "[Error] Failed to delete selected controller: " << err.what() << std::endl;
         return false;
     }
 }
@@ -480,7 +480,7 @@ bool App::update_controller_led_config(int index)
     }
     catch (std::out_of_range& err)
     {
-        std::cout << err.what() << std::endl;
+        std::cout << "[Error] Failed to update controller led config: " << err.what() << std::endl;
         return false;
     }
 }
@@ -499,7 +499,7 @@ bool App::delete_selected_led_config()
 
         if (!index)
         {
-            throw std::runtime_error("Led config not found");
+            throw std::runtime_error("Led config not found.");
         }
 
         *index += 1; // To account for default config
@@ -521,7 +521,7 @@ bool App::delete_selected_led_config()
     }
     catch (std::runtime_error& err)
     {
-        std::cout << err.what() << std::endl;
+        std::cout << "[Error] Failed to delete selected led config: " << err.what() << std::endl;
         return false;
     }
 }
@@ -541,7 +541,7 @@ bool App::update_controller_timer_config(int index)
     }
     catch (std::out_of_range& err)
     {
-        std::cout << err.what() << std::endl;
+        std::cout << "[Error] Failed to update controller timer config: " << err.what() << std::endl;
         return false;
     }
 }
@@ -560,7 +560,7 @@ bool App::delete_selected_timer_config()
 
         if (!index)
         {
-            throw std::runtime_error("Timer config not found");
+            throw std::runtime_error("Timer config not found.");
         }
 
         *index += 1; // To account for default config
@@ -581,7 +581,7 @@ bool App::delete_selected_timer_config()
     }
     catch (std::runtime_error& err)
     {
-        std::cout << err.what() << std::endl;
+        std::cout << "[Error] Failed to delete selected timer config: " << err.what() << std::endl;
         return false;
     }
 }
@@ -595,7 +595,7 @@ LEDController* App::led_controller()
     }
     catch (std::out_of_range& err)
     {
-        std::cout << err.what() << std::endl;
+        std::cout << "[Error] Failed to get led controller: " << err.what() << std::endl;
         return nullptr;
     }
 }

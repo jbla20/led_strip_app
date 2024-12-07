@@ -81,6 +81,9 @@
     <ClCompile Include="src\implot\implot_items.cpp">
       <Filter>Source Files\implot</Filter>
     </ClCompile>
+    <ClCompile Include="src\log_tab.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\app.h">
@@ -241,6 +244,9 @@
     </ClInclude>
     <ClInclude Include="src\implot\implot_internal.h">
       <Filter>Header Files\implot</Filter>
+    </ClInclude>
+    <ClInclude Include="src\log_tab.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

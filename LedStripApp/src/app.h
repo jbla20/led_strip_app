@@ -12,6 +12,7 @@
 #include "timer_configuration.h"
 #include "app_tab.h"
 #include "light_tab.h"
+#include "log_tab.h"
 
 class App
 {
@@ -69,7 +70,9 @@ private:
     AppTab* m_current_tab = nullptr;
 
     friend class LightTab;
+	friend class LogTab;
     LightTab m_light_tab = LightTab(this, "Light");
+	LogTab m_log_tab = LogTab(this, "Log");
 
-    AppTab* m_tabs[1] = { &m_light_tab };
+    AppTab* m_tabs[2] = { &m_light_tab, &m_log_tab };
 };

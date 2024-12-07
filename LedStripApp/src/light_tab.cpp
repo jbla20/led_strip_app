@@ -58,6 +58,7 @@ void LightTab::render()
             {
                 if (ImGui::Button("Connect"))
                 {
+                    std::cout << "[Info] Connecting to controller \'" << m_app->led_controller()->m_name << "\'." << std::endl;
                     m_app->led_controller()->scan_and_connect();
                 }
             }
@@ -88,7 +89,7 @@ void LightTab::render()
             {
                 if (m_app->create_new_controller(std::string(m_new_controller_name)))
                 {
-                    std::cout << "Created new controller." << std::endl;
+                    std::cout << "[Info] Creating new controller \'" << m_new_controller_name << "\'." << std::endl;
                     m_app->update_controller(static_cast<int>(m_app->m_led_controllers.size()) - 1);
                     m_selected_controller = static_cast<int>(m_app->m_led_controllers.size()) - 1;
                 }
@@ -104,6 +105,7 @@ void LightTab::render()
             bool name_exists = helpers::exists_in_vector(m_app->led_controller_names(), std::string(m_rename_controller_name)) || helpers::exists_in_vector(m_app->led_controller_aliases(), std::string(m_rename_controller_name));
             if (m_rename_controller_name[0] != '\0' && !name_exists)
             {
+                std::cout << "[Info] Renaming controller from \'" << m_app->led_controller()->m_alias << "\' to \'" << m_new_controller_name << "\'." << std::endl;
                 m_app->rename_selected_controller(std::string(m_rename_controller_name));
             }
         }
@@ -111,11 +113,13 @@ void LightTab::render()
         // Delete and reset device
         if (ImGui::Button("Delete"))
         {
+            std::cout << "[Info] Deleting controller \'" << m_app->led_controller()->m_alias << "\' with alias \'" << m_app->led_controller()->m_name << "\'." << std::endl;
             m_app->delete_selected_controller();
         }
         ImGui::SameLine();
         if (ImGui::Button("Reset"))
         {
+            std::cout << "[Info] Resetting controller name from \'" << m_app->led_controller()->m_alias << "\' to \'" << m_app->led_controller()->m_name << "\'." << std::endl;
             m_app->led_controller()->m_alias = m_app->led_controller()->m_name;
         }
 
@@ -148,7 +152,7 @@ void LightTab::render()
             {
                 if (m_app->create_new_led_config(std::string(m_new_led_config_name)))
                 {
-                    std::cout << "Created new led config." << std::endl;
+                    std::cout << "[Info] Creating new led config \'" << m_new_led_config_name << "\' for controller \'" << m_app->led_controller()->m_name << "\'." << std::endl;
                     m_app->update_controller_led_config(static_cast<int>(m_app->m_led_configs.size()) - 1);
                     m_selected_led_config = static_cast<int>(m_app->m_led_configs.size()) - 1;
                 }
@@ -163,6 +167,7 @@ void LightTab::render()
         {
             if (m_rename_led_config_name[0] != '\0' && !helpers::exists_in_vector(m_app->led_config_names(), std::string(m_rename_led_config_name)))
             {
+                std::cout << "[Info] Renaming led config from \'" << m_app->led_controller()->led_config()->name<< "\' to \'" << m_rename_led_config_name << "\'." << std::endl;
                 m_app->rename_selected_led_config(std::string(m_rename_led_config_name));
             }
         }
@@ -170,6 +175,7 @@ void LightTab::render()
         // Delete config
         if (ImGui::Button("Delete"))
         {
+            std::cout << "[Info] Deleting led config \'" << m_app->led_controller()->led_config()->name << "\'." << std::endl;
             m_app->delete_selected_led_config();
         }
 
@@ -232,7 +238,7 @@ void LightTab::render()
                 {
                     if (m_app->create_new_timer_config(std::string(m_new_timer_config_name)))
                     {
-                        std::cout << "Created new timer config." << std::endl;
+                        std::cout << "[Info] Creating new timer config \'" << m_new_timer_config_name << "\' for controller \'" << m_app->led_controller()->m_name << "\'." << std::endl;
                         m_app->update_controller_timer_config(static_cast<int>(m_app->m_timer_configs.size()) - 1);
                         m_selected_timer_config = static_cast<int>(m_app->m_timer_configs.size()) - 1;
                     }
@@ -247,6 +253,7 @@ void LightTab::render()
             {
                 if (m_rename_timer_config_name[0] != '\0' && !helpers::exists_in_vector(m_app->timer_config_names(), std::string(m_rename_timer_config_name)))
                 {
+                    std::cout << "[Info] Renaming timer config from \'" << m_app->led_controller()->timer_config()->name << "\' to \'" << m_rename_timer_config_name << "\'." << std::endl;
                     m_app->rename_selected_timer_config(std::string(m_rename_timer_config_name));
                 }
             }
@@ -254,6 +261,7 @@ void LightTab::render()
             // Delete config
             if (ImGui::Button("Delete"))
             {
+                std::cout << "[Info] Deleting timer config \'" << m_app->led_controller()->timer_config()->name << "\'." << std::endl;
                 m_app->delete_selected_timer_config();
             }
 
@@ -267,7 +275,7 @@ void LightTab::render()
             {
                 if (m_app->led_controller()->timer_config()->start < 0)
                 {
-                    std::cout << "Start time must be non-negative" << std::endl;
+                    std::cout << "[Info] Start time must be non-negative" << std::endl;
                     m_app->led_controller()->timer_config()->start = 0.0f;
                 }
             }
@@ -276,7 +284,7 @@ void LightTab::render()
             {
                 if (m_app->led_controller()->timer_config()->end <= 0)
                 {
-                    std::cout << "End time must be positive" << std::endl;
+                    std::cout << "[Info] End time must be positive" << std::endl;
                     m_app->led_controller()->timer_config()->end = 1.0f;
                 }
             }
@@ -285,7 +293,7 @@ void LightTab::render()
             {
                 if (m_app->led_controller()->timer_config()->repeat < 1)
                 {
-                    std::cout << "Repeat number must be non-negative" << std::endl;
+                    std::cout << "[Info] Repeat number must be non-negative" << std::endl;
                     m_app->led_controller()->timer_config()->repeat = 1;
                 }
             }
@@ -302,11 +310,13 @@ void LightTab::render()
         ImGui::SameLine();
         if (ImGui::Button(!m_app->m_timer.is_active() ? "Start" : (!m_app->m_timer.is_paused() ? "Pause" : "Unpause")))
         {
+            std::cout << (!m_app->m_timer.is_active() ? "Starting" : (!m_app->m_timer.is_paused() ? "Pausing" : "Unpausing")) << " timer." << std::endl;
             m_app->m_timer.pause(!m_app->m_timer.is_paused());
         }
         ImGui::SameLine();
         if (ImGui::Button("Reset"))
         {
+            std::cout << "[Info] Resetting timer." << std::endl;
             m_app->m_timer.reset();
         }
         ImGui::Text("Relative time: %.3f seconds", m_app->m_timer.get_relative_time());
