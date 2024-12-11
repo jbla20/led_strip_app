@@ -30,8 +30,8 @@ App::~App() {
     for (size_t i = 1; i < m_led_controllers.size(); i++)
     {
         if (m_led_controllers[i]->is_device_on()) m_led_controllers[i]->toggle_device();
-        m_led_controllers[i]->~LEDController(); // Call destructor to join threads
     }
+    m_led_controllers.clear(); // Call destructor of controllers to joint threads
     ImGui_ImplDX12_Shutdown();
     ImGui_ImplWin32_Shutdown();
     ImGui::DestroyContext();
