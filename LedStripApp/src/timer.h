@@ -19,7 +19,7 @@ public:
 
 	inline float get_relative_time() { return m_delta_time_s; }
 	inline bool is_paused() { return m_paused; }
-	inline bool is_active() { return m_delta_time_s > 0.001f; }
+	inline bool is_active() { return m_delta_time_s > 0.0001f; }
 
 protected:
 	using clock = std::chrono::high_resolution_clock;

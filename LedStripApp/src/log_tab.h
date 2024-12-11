@@ -3,6 +3,7 @@
 #include <iostream>
 #include <streambuf>
 #include <string>
+#include <chrono>
 
 #include "app_tab.h"
 
@@ -32,11 +33,30 @@ namespace ImGui
 
         void AddLog(const char* fmt, ...) IM_FMTARGS(2)
         {
+            auto now = std::chrono::system_clock::now();
+            auto duration = now.time_since_epoch();
+
+            // Extract seconds and fractional milliseconds
+            auto seconds = std::chrono::duration_cast<std::chrono::seconds>(duration).count();
+            auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count() % 1000;
+
             int old_size = Buf.size();
+
+            // Format the timestamp
+            Buf.appendf("[%lld.%03lld]", seconds, milliseconds); // Include milliseconds
+
+            // Handle variable arguments
             va_list args;
             va_start(args, fmt);
-            Buf.appendfv(fmt, args);
+
+            // Use a temporary buffer to ensure stability
+            char temp_buf[1024];
+            vsnprintf(temp_buf, sizeof(temp_buf), fmt, args);
+            Buf.append(temp_buf); // Append the formatted string
+
             va_end(args);
+
+            // Update line offsets
             for (int new_size = Buf.size(); old_size < new_size; old_size++)
                 if (Buf[old_size] == '\n') LineOffsets.push_back(old_size + 1);
         }
@@ -52,38 +72,50 @@ namespace ImGui
     private:
         void text_formatted(const char* line_start, const char* line_end)
         {
+            // Skip timestamp: Find the first ']' to locate the start of the actual message
+            const char* log_start = strstr(line_start, "]");
+            log_start = (log_start != nullptr) ? log_start + 1 : line_start;
+
+            bool skip_render = false;
             ImVec4 col = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-            if (line_end - line_start >= 2)
+            if (line_end - log_start >= 2)
             {
-                if (*(line_start + 1) == 'D')
+                if (*(log_start + 1) == 'D')
                 {
-                    if (LogLevel > 0) return;
+                    if (LogLevel > 0) skip_render = true;
                     col = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
                 }
-                else if (*(line_start + 1) == 'I')
+                else if (*(log_start + 1) == 'I')
                 {
-                    if (LogLevel > 1) return;
+                    if (LogLevel > 1) skip_render = true;
                     col = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
                 }
-                else if (*(line_start + 1) == 'W')
+                else if (*(log_start + 1) == 'W')
                 {
-                    if (LogLevel > 2) return;
+                    if (LogLevel > 2) skip_render = true;
                     col = ImVec4(1.0f, 1.0f, 0.0f, 1.0f);
                 }
-                else if (*(line_start + 1) == 'E')
+                else if (*(log_start + 1) == 'E')
                 {
-                    if (LogLevel > 3) return;
+                    if (LogLevel > 3) skip_render = true;
                     col = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
                 }
-                else if (*(line_start + 1) == 'F')
+                else if (*(log_start + 1) == 'F')
                 {
                     col = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
                 }
             }
 
-            ImGui::PushStyleColor(ImGuiCol_Text, col);
-            ImGui::TextUnformatted(line_start, line_end);
-            ImGui::PopStyleColor();
+            if (skip_render)
+            {
+                ImGui::Dummy(ImVec2(0, ImGui::GetTextLineHeight())); // Advance cursor by one line
+            }
+            else
+            {
+                ImGui::PushStyleColor(ImGuiCol_Text, col);
+                ImGui::TextUnformatted(line_start, line_end);
+                ImGui::PopStyleColor();
+            }
         }
 
     public:
@@ -141,7 +173,7 @@ namespace ImGui
                     // If you have tens of thousands of items and their processing cost is non-negligible, coarse clipping them
                     // on your side is recommended. Using ImGuiListClipper requires
                     // - A) random access into your data
-                    // - B) items all being the  same height,
+                    // - B) items all being the same height,
                     // both of which we can handle since we have an array pointing to the beginning of each line of text.
                     // When using the filter (in the block of code above) we don't have random access into the data to display
                     // anymore, which is why we don't use the clipper. Storing or skimming through the search result would make

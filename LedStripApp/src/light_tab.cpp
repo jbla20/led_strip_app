@@ -167,7 +167,7 @@ void LightTab::render()
         {
             if (m_rename_led_config_name[0] != '\0' && !helpers::exists_in_vector(m_app->led_config_names(), std::string(m_rename_led_config_name)))
             {
-                std::cout << "[Info] Renaming led config from \'" << m_app->led_controller()->led_config()->name<< "\' to \'" << m_rename_led_config_name << "\'." << std::endl;
+                std::cout << "[Info] Renaming led config from \'" << m_app->led_controller()->led_config()->name << "\' to \'" << m_rename_led_config_name << "\'." << std::endl;
                 m_app->rename_selected_led_config(std::string(m_rename_led_config_name));
             }
         }
@@ -307,10 +307,12 @@ void LightTab::render()
         // Global timer
         ImGui::Text("Global timer");
         m_app->m_timer.update();
+        std::cout << "[Debug] Relative time: " << std::to_string(m_app->m_timer.get_relative_time()) << std::endl;
+
         ImGui::SameLine();
         if (ImGui::Button(!m_app->m_timer.is_active() ? "Start" : (!m_app->m_timer.is_paused() ? "Pause" : "Unpause")))
         {
-            std::cout << (!m_app->m_timer.is_active() ? "Starting" : (!m_app->m_timer.is_paused() ? "Pausing" : "Unpausing")) << " timer." << std::endl;
+            std::cout << "[Info] " << (!m_app->m_timer.is_active() ? "Starting" : (!m_app->m_timer.is_paused() ? "Pausing" : "Unpausing")) << " timer." << std::endl;
             m_app->m_timer.pause(!m_app->m_timer.is_paused());
         }
         ImGui::SameLine();
@@ -324,7 +326,7 @@ void LightTab::render()
 
         // Live timer view plot
         const double x_max = std::ranges::max(
-            m_app->m_timer_configs | std::views::transform([](const std::unique_ptr<TimerConfiguration>& timer_config) 
+            m_app->m_timer_configs | std::views::transform([](const std::unique_ptr<TimerConfiguration>& timer_config)
                 { return timer_config->end * timer_config->repeat; }
             )
         );
@@ -361,13 +363,13 @@ void LightTab::render()
                     y_timer[3 + 4 * j] = static_cast<double>(!m_app->m_timer_configs[i]->inverse);
                     y_timer[4 + 4 * j] = static_cast<double>(m_app->m_timer_configs[i]->inverse);
                 }
-                
+
                 x_timer[num_elements - 1] = x_max;
                 y_timer[num_elements - 1] = 0.0;
 
                 ImPlot::PlotLine(m_app->m_timer_configs[i]->name.c_str(), x_timer.data(), y_timer.data(), num_elements);
             }
-            
+
             // Plot vertical line that follows relative time
             ImPlot::PushStyleColor(ImPlotCol_Line, IM_COL32(255, 255, 255, 255));
             double x_vert[2] = { m_app->m_timer.get_relative_time(), m_app->m_timer.get_relative_time() };
@@ -379,5 +381,5 @@ void LightTab::render()
             ImPlot::EndPlot();
         }
     }
-    ImGui::End();
+    ImGui::End(); // Live Timer View
 }

@@ -18,10 +18,15 @@ LEDController::~LEDController()
     {
         m_scanning_thread.join();
     }
+    if (m_command_thread.joinable())
+    {
+        m_command_thread.join();
+    }
     if (m_peripheral != nullptr) 
     {
         m_peripheral->disconnect();
         delete m_peripheral;
+        m_peripheral = nullptr; // Avoid dangling pointer
     }
 }
 
@@ -36,7 +41,6 @@ void LEDController::scan_and_connect()
 
 void LEDController::toggle_device()
 {
-    update_rgb();
     led_config()->device_on = !led_config()->device_on;
     set_device_on(led_config()->device_on);
 }
@@ -46,18 +50,32 @@ void LEDController::write_command(SimpleBLE::ByteArray& command)
     if (!is_connected())
     {
         m_connection_status = BLESTATUS::BLE_PERIPHERAL_NOT_CONNECTED;
+        std::cout << "[Warning] Cannot write to unconnected controller \'" << m_name << "\'." << std::endl;
+        return;
+    }
+    
+    if (m_is_writing_command.load())
+    {
+        std::cout << "[Debug] Writing command is busy. Skipping for \'" << m_name << "\'." << std::endl;
         return;
     }
 
-    try {
-        m_peripheral->write_request(WRITE_SERVICE, WRITE_CHARACTERISTIC, command);
+    m_is_writing_command.store(true);
+    if (m_command_thread.joinable()) {
+        m_command_thread.join(); // Wait for the previous thread to finish
     }
-    catch (SimpleBLE::Exception::BaseException ex)
-    {
-#if DEBUG
-        std::cerr << ex.what() << std::endl;
-#endif // DEBUG
-    }
+    m_command_thread = std::thread([this, command]() {
+        try
+        {
+            m_peripheral->write_request(WRITE_SERVICE, WRITE_CHARACTERISTIC, command);
+            std::cout << "[Debug] Command successfully written to LED controller." << std::endl;
+        }
+        catch (const SimpleBLE::Exception::BaseException& e)
+        {
+            std::cerr << "[Error] Exception during write request: " << e.what() << std::endl;
+        }
+        m_is_writing_command.store(false);
+    });
 }
 
 bool LEDController::is_connected()

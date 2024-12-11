@@ -21,15 +21,17 @@ App::App() : m_window(L"LED Strip Controller"), m_timer(this)
     m_led_configs.emplace_back(std::make_unique<LEDConfiguration>(name, false, std::array<float, 3>{1.0f, 1.0f, 1.0f}, 1.0f, Mode(0, 0.0f)));
     m_selected_led_configs = { { name, 0 } };
 
-    m_timer_configs.emplace_back(std::make_unique<TimerConfiguration>(name, 0.0f, 0.0f, 0, false));
+    m_timer_configs.emplace_back(std::make_unique<TimerConfiguration>(name, 0.0f, 1.0f, 1, false));
     m_selected_timer_configs = { { name, 0 } };
 }
 
 App::~App() {
     save_settings();
-    std::ranges::for_each(m_led_controllers, [](const std::unique_ptr<LEDController>& controller)
-        { if (controller->is_device_on()) controller->toggle_device(); }
-    );
+    for (size_t i = 1; i < m_led_controllers.size(); i++)
+    {
+        if (m_led_controllers[i]->is_device_on()) m_led_controllers[i]->toggle_device();
+        m_led_controllers[i]->~LEDController(); // Call destructor to join threads
+    }
     ImGui_ImplDX12_Shutdown();
     ImGui_ImplWin32_Shutdown();
     ImGui::DestroyContext();
@@ -334,7 +336,7 @@ void App::load_settings()
     catch (const YAML::Exception& ex)
     {
         // Handle YAML exceptions (e.g., file errors, parsing errors)
-        std::cout << "[Error] Failed to load settings: " << ex.what() << "\n";
+        std::cout << "[Error] Failed to load settings: " << ex.what() << std::endl;
     }
 }
 
@@ -401,7 +403,7 @@ void App::save_settings()
     catch (const YAML::Exception& ex)
     {
         // Handle YAML exceptions (e.g., serialization errors)
-        std::cout << "[Error] Failed to save settings: " << ex.what() << "\n";
+        std::cout << "[Error] Failed to save settings: " << ex.what() << std::endl;
     }
 }
 

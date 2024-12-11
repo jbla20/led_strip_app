@@ -23,6 +23,7 @@ bool Timer::update()
         return (std::fmod(m_delta_time_s, cycle_duration) > timer_config->start) &&
                (std::fmod(m_delta_time_s, cycle_duration) < timer_config->end);
     };
+
     for (size_t i = 1; i < m_app->m_led_controllers.size(); i++)
     {
         LEDController* controller = m_app->m_led_controllers[i].get();
@@ -63,15 +64,17 @@ void Timer::pause(bool pause)
     {
         m_start_time = clock::now() - std::chrono::duration_cast<clock::duration>(std::chrono::duration<float>(m_delta_time_s));
     }
+
     m_paused = pause;
 }
 
 void Timer::reset()
 {
     m_delta_time_s = 0.0f;
-    std::ranges::for_each(m_app->m_timer_configs, [](const std::unique_ptr<TimerConfiguration>& timer_config)
-        { timer_config->update_progress(0.0f); }
-    );
+    for (size_t i = 1; i < m_app->m_timer_configs.size(); i++)
+    {
+        m_app->m_timer_configs[i]->update_progress(0.0f);
+    }
 
     pause(true);
 }

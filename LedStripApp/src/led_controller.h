@@ -66,5 +66,7 @@ private:
 	SimpleBLE::Peripheral* m_peripheral;
 	BLESTATUS m_connection_status;
 	std::atomic_bool m_is_scanning;
+	std::atomic_bool m_is_writing_command;
 	std::thread m_scanning_thread;
+	std::thread m_command_thread;
 };
